@@ -980,8 +980,313 @@
     }
   }
 
+
+
+  // V9 – jednotná správa staníc: dvojklik = uložiť/presunúť/vymazať.
+  // Manuálne pridaná stanica zostáva natrvalo v localStorage a používateľ si volí priečinok.
+  function installStationManagerV9() {
+    const DELETED_KEY = "djchoice_web_v1_deleted";
+    const OVERRIDE_KEY = "djchoice_web_v1_group_overrides";
+    const stationListEl = document.querySelector("#stationList");
+    const filtersElV9 = document.querySelector("#filters");
+    const dialog = document.querySelector("#assignDialog");
+    const groupSelect = document.querySelector("#assignGroup");
+    const saveBtn = document.querySelector("#assignSaveBtn");
+    const deleteBtn = document.querySelector("#manageDeleteBtn");
+    const cancelBtn = document.querySelector("#manageCancelBtn");
+    const title = document.querySelector("#manageStationTitle");
+    const assignName = document.querySelector("#assignStationName");
+    const addBtn = document.querySelector("#addBtn");
+    const customGroup = document.querySelector("#customGroup");
+    const saveCustomBtn = document.querySelector("#saveCustomBtn");
+    const stationDialog = document.querySelector("#stationDialog");
+    const stationForm = document.querySelector("#stationForm");
+    if (!stationListEl || !dialog || !groupSelect || !saveBtn) return;
+
+    const loadJson = (key, fallback) => {
+      try {
+        const v = JSON.parse(localStorage.getItem(key) || "null");
+        return v ?? fallback;
+      } catch { return fallback; }
+    };
+    const deletedUrls = new Set((loadJson(DELETED_KEY, []) || []).filter(Boolean));
+    const groupOverrides = loadJson(OVERRIDE_KEY, {}) || {};
+    let pendingManage = null;
+
+    const persistDeleted = () => localStorage.setItem(DELETED_KEY, JSON.stringify([...deletedUrls]));
+    const persistOverrides = () => localStorage.setItem(OVERRIDE_KEY, JSON.stringify(groupOverrides));
+    const stationUrl = s => String(s?.url || "").trim();
+
+    // Staršie uloženia z pôvodného dialógu zachováme: ak už existuje assigned kópia
+    // pevnej stanice, jej cieľový priečinok berieme ako používateľovu voľbu.
+    try {
+      if (typeof assignedStations !== "undefined" && Array.isArray(assignedStations)) {
+        for (const a of assignedStations) {
+          const u = stationUrl(a);
+          if (!u) continue;
+          const baseHit = typeof baseStations !== "undefined" && Array.isArray(baseStations) && baseStations.some(b => stationUrl(b) === u);
+          if (baseHit && Array.isArray(a.groups) && a.groups.length && !groupOverrides[u]) {
+            groupOverrides[u] = [a.groups[0]];
+          }
+        }
+        persistOverrides();
+      }
+    } catch {}
+
+    // Tombstones: VYMAZAŤ skryje stanicu natrvalo v tomto prehliadači.
+    try {
+      const originalAllStations = allStations;
+      allStations = function() {
+        const raw = originalAllStations();
+        const out = [];
+        const seen = new Set();
+        for (const s of raw) {
+          const u = stationUrl(s);
+          if (!u || deletedUrls.has(u) || seen.has(u)) continue;
+          seen.add(u);
+          out.push(s);
+        }
+        return out;
+      };
+    } catch {}
+
+    // Používateľský presun pevnej stanice prepisuje jej pôvodný priečinok,
+    // ale typové priečinky Hudba/Slovo zostanú zachované.
+    try {
+      const originalGroupsFor = groupsFor;
+      groupsFor = function(s) {
+        const u = stationUrl(s);
+        const override = u && groupOverrides[u];
+        if (!override || !override.length) return originalGroupsFor(s);
+        const set = new Set(override);
+        if (s?.local) set.add("Moje");
+        if (s?.kind === "Hovorené") set.add("Slovo");
+        if (s?.kind === "Hudba") set.add("Hudba");
+        return [...set];
+      };
+    } catch {}
+
+    let hint = document.querySelector("#stationManageHint");
+    if (!hint) {
+      hint = document.createElement("div");
+      hint.id = "stationManageHint";
+      hint.className = "station-manage-hint";
+      stationListEl.parentNode.insertBefore(hint, stationListEl);
+    }
+
+    const updateHint = () => {
+      let currentFilter = "";
+      try { currentFilter = typeof filter !== "undefined" ? filter : ""; } catch {}
+      const isNew = currentFilter === "NEW";
+      hint.classList.toggle("new-mode", isNew);
+      hint.textContent = isNew
+        ? "DVOJKLIK NA STANICU → ULOŽIŤ DO PRIEČINKA"
+        : "Dvojklik na stanicu → pridať / presunúť / vymazať";
+    };
+
+    // Po každom renderi si naviažeme aktuálne DOM riadky na aktuálne stanice.
+    try {
+      const originalRender = render;
+      render = function() {
+        originalRender();
+        let visible = [];
+        try { visible = allStations().filter(stationMatches); } catch {}
+        [...stationListEl.querySelectorAll(".station")].forEach((row, i) => {
+          row.dataset.djStationIndex = String(i);
+        });
+        stationListEl.__djVisibleStations = visible;
+        updateHint();
+      };
+    } catch {}
+
+    const realGroups = ["Moje","HELEN","SK","OLDIES","JAZZ","ONLY","ETNO","WORLD","CZ","PL","Slovo","Hudba"];
+    const bestCurrentGroup = s => {
+      const u = stationUrl(s);
+      if (groupOverrides[u]?.[0]) return groupOverrides[u][0];
+      try {
+        if (typeof filter !== "undefined" && realGroups.includes(filter) && filter !== "NEW") return filter;
+      } catch {}
+      const gs = Array.isArray(s?.groups) ? s.groups : [];
+      return gs.find(g => realGroups.includes(g)) || "Moje";
+    };
+
+    const openManager = s => {
+      if (!s) return;
+      pendingManage = s;
+      try { pendingAssign = null; } catch {}
+      if (title) title.textContent = s.newDiscovery ? "Uložiť stanicu" : "Správa stanice";
+      if (assignName) assignName.textContent = s.name || "Stanica";
+      const g = bestCurrentGroup(s);
+      if ([...groupSelect.options].some(o => o.value === g || o.textContent === g)) groupSelect.value = g;
+      if (deleteBtn) deleteBtn.textContent = s.newDiscovery ? "VYMAZAŤ Z NEW" : "VYMAZAŤ";
+      try { if (!dialog.open) dialog.showModal(); } catch {}
+    };
+
+    stationListEl.addEventListener("dblclick", e => {
+      const row = e.target.closest(".station");
+      if (!row) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const arr = stationListEl.__djVisibleStations || [];
+      const s = arr[Number(row.dataset.djStationIndex || -1)];
+      if (s) openManager(s);
+    }, true);
+
+    const closeManager = () => {
+      pendingManage = null;
+      try { dialog.close(); } catch {}
+    };
+    cancelBtn?.addEventListener("click", closeManager);
+    dialog.addEventListener("click", e => { if (e.target === dialog) closeManager(); });
+
+    const saveManaged = e => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const s = pendingManage;
+      if (!s) return;
+      const g = groupSelect.value || "Moje";
+      const u = stationUrl(s);
+      if (!u) return;
+
+      deletedUrls.delete(u);
+      persistDeleted();
+
+      try {
+        if (s.newDiscovery) {
+          const existing = Array.isArray(assignedStations) ? assignedStations.find(x => stationUrl(x) === u) : null;
+          if (existing) {
+            existing.groups = [g];
+            existing.newDiscovery = false;
+            existing.assigned = true;
+          } else if (Array.isArray(assignedStations)) {
+            assignedStations.push({...s, groups:[g], newDiscovery:false, local:false, assigned:true, source:"radio-browser"});
+          }
+          if (typeof saveLocal === "function") saveLocal(ASSIGNED_KEY, assignedStations);
+          if (Array.isArray(freshNew)) freshNew = freshNew.filter(x => stationUrl(x) !== u);
+        } else if (s.local) {
+          const hit = Array.isArray(localStations) ? localStations.find(x => stationUrl(x) === u) : null;
+          if (hit) hit.groups = [g];
+          if (typeof saveLocal === "function") saveLocal(LOCAL_KEY, localStations);
+        } else if (s.assigned) {
+          const hit = Array.isArray(assignedStations) ? assignedStations.find(x => stationUrl(x) === u) : null;
+          if (hit) hit.groups = [g];
+          if (typeof saveLocal === "function") saveLocal(ASSIGNED_KEY, assignedStations);
+        } else {
+          groupOverrides[u] = [g];
+          persistOverrides();
+        }
+      } catch (err) {
+        console.warn("DJ Choice station move failed", err);
+      }
+
+      closeManager();
+      try { filter = g; } catch {}
+      try { if (typeof render === "function") render(); } catch {}
+    };
+    saveBtn.addEventListener("click", saveManaged, true);
+
+    const deleteManaged = e => {
+      e?.preventDefault?.();
+      e?.stopImmediatePropagation?.();
+      const s = pendingManage;
+      if (!s) return;
+      const u = stationUrl(s);
+      if (!u) return;
+      if (!confirm(`Vymazať „${s.name || "stanicu"}“ z DJ Choice v tomto prehliadači?`)) return;
+
+      deletedUrls.add(u);
+      delete groupOverrides[u];
+      persistDeleted();
+      persistOverrides();
+      try {
+        if (Array.isArray(localStations)) {
+          localStations = localStations.filter(x => stationUrl(x) !== u);
+          if (typeof saveLocal === "function") saveLocal(LOCAL_KEY, localStations);
+        }
+        if (Array.isArray(assignedStations)) {
+          assignedStations = assignedStations.filter(x => stationUrl(x) !== u);
+          if (typeof saveLocal === "function") saveLocal(ASSIGNED_KEY, assignedStations);
+        }
+        if (Array.isArray(freshNew)) freshNew = freshNew.filter(x => stationUrl(x) !== u);
+        if (typeof current !== "undefined" && current && stationUrl(current) === u) {
+          try { if (typeof stopAudio === "function") stopAudio(); } catch {}
+          current = null;
+          const n = document.querySelector("#stationName");
+          const d = document.querySelector("#stationDesc");
+          if (n) n.textContent = "Vyber stanicu";
+          if (d) d.textContent = "V tejto verzii sa prehrávajú iba priame HTTPS streamy.";
+        }
+      } catch {}
+      closeManager();
+      try { if (typeof render === "function") render(); } catch {}
+    };
+    deleteBtn?.addEventListener("click", deleteManaged, true);
+
+    // Manuálny PRIDAJ: zvolí sa priečinok a stanica v ňom zostane po reštarte.
+    addBtn?.addEventListener("click", () => {
+      let g = "Moje";
+      try { if (realGroups.includes(filter) && filter !== "NEW") g = filter; } catch {}
+      if (customGroup && [...customGroup.options].some(o => o.value === g || o.textContent === g)) customGroup.value = g;
+    });
+
+    saveCustomBtn?.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const name = document.querySelector("#customName")?.value.trim() || "";
+      const url = document.querySelector("#customUrl")?.value.trim() || "";
+      const g = customGroup?.value || "Moje";
+      if (!name || !url) {
+        alert("Vyplň názov aj HTTPS stream.");
+        return;
+      }
+      if (!url.startsWith("https://")) {
+        alert("Webová DJ Choice prijíma iba HTTPS streamy.");
+        return;
+      }
+
+      deletedUrls.delete(url);
+      delete groupOverrides[url];
+      persistDeleted();
+      persistOverrides();
+
+      let s = null;
+      try {
+        s = Array.isArray(localStations) ? localStations.find(x => stationUrl(x) === url) : null;
+        if (s) {
+          s.name = name;
+          s.groups = [g];
+          s.kind = g === "Slovo" ? "Hovorené" : "Hudba";
+        } else {
+          s = {
+            name, url,
+            kind: g === "Slovo" ? "Hovorené" : "Hudba",
+            description: `Moja webová stanica • ${g}`,
+            groups:[g], logo:"", local:true, source:"user"
+          };
+          if (Array.isArray(localStations)) localStations.push(s);
+        }
+        if (typeof saveLocal === "function") saveLocal(LOCAL_KEY, localStations);
+      } catch (err) {
+        console.warn("DJ Choice custom station save failed", err);
+        return;
+      }
+
+      try { stationDialog?.close(); } catch {}
+      try { stationForm?.reset(); } catch {}
+      try { filter = g; } catch {}
+      try {
+        if (typeof selectStation === "function") selectStation(s, false);
+        else if (typeof render === "function") render();
+      } catch {}
+    }, true);
+
+    // Už pri štarte zobraz nápovedu, ďalšie rendery ju udržia aktuálnu.
+    try { if (typeof render === "function") render(); else updateHint(); } catch { updateHint(); }
+  }
+
   installHelenFeature();
   installMojeAndAddFix();
+  installStationManagerV9();
   addOnlyStations();
   installTodayCard();
   installKineticEq();

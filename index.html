@@ -13,7 +13,7 @@
   <title>DJ Choice</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css?v=4">
-  <link rel="stylesheet" href="extras.css?v=7">
+  <link rel="stylesheet" href="extras.css?v=9">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
 </head>
 <body>
@@ -109,21 +109,10 @@
       <label>HTTPS stream
         <input id="customUrl" required type="url" placeholder="https://…">
       </label>
-      <p class="dialog-note">Webová verzia zámerne prijíma iba HTTPS stream.</p>
-      <div class="dialog-actions">
-        <button id="cancelStationBtn" type="button" class="ghost">ZRUŠIŤ</button>
-        <button id="saveCustomBtn" value="default" class="accent">ULOŽIŤ DO MOJE</button>
-      </div>
-    </form>
-  </dialog>
-
-  <dialog id="assignDialog">
-    <form method="dialog">
-      <h2>Pridať do…</h2>
-      <div id="assignStationName" class="assign-name"></div>
       <label>Priečinok
-        <select id="assignGroup">
+        <select id="customGroup">
           <option>Moje</option>
+          <option>HELEN</option>
           <option>SK</option>
           <option>OLDIES</option>
           <option>JAZZ</option>
@@ -136,14 +125,44 @@
           <option>Hudba</option>
         </select>
       </label>
+      <p class="dialog-note">Webová verzia zámerne prijíma iba HTTPS stream. Stanica sa uloží natrvalo v tomto prehliadači.</p>
       <div class="dialog-actions">
-        <button value="cancel" class="ghost">ZRUŠIŤ</button>
-        <button id="assignSaveBtn" value="default" class="accent">PRIDAŤ</button>
+        <button id="cancelStationBtn" type="button" class="ghost">ZRUŠIŤ</button>
+        <button id="saveCustomBtn" type="button" class="accent">ULOŽIŤ STANICU</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="assignDialog">
+    <form method="dialog" id="manageStationForm">
+      <h2 id="manageStationTitle">Stanica</h2>
+      <div id="assignStationName" class="assign-name"></div>
+      <label>Priečinok
+        <select id="assignGroup">
+          <option>Moje</option>
+          <option>HELEN</option>
+          <option>SK</option>
+          <option>OLDIES</option>
+          <option>JAZZ</option>
+          <option>ONLY</option>
+          <option>ETNO</option>
+          <option>WORLD</option>
+          <option>CZ</option>
+          <option>PL</option>
+          <option>Slovo</option>
+          <option>Hudba</option>
+        </select>
+      </label>
+      <p class="dialog-note">Dvojklik na stanicu otvorí túto správu stanice.</p>
+      <div class="dialog-actions station-manage-actions">
+        <button id="manageCancelBtn" type="button" class="ghost">ZRUŠIŤ</button>
+        <button id="manageDeleteBtn" type="button" class="danger">VYMAZAŤ</button>
+        <button id="assignSaveBtn" type="button" class="accent">ULOŽIŤ / PRESUNÚŤ</button>
       </div>
     </form>
   </dialog>
 
   <script src="app.js?v=5" defer></script>
-  <script src="extras.js?v=8" defer></script>
+  <script src="extras.js?v=9" defer></script>
 </body>
 </html>

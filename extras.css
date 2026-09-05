@@ -383,3 +383,40 @@ body.dj-jukebox .helen-photo-card{
 @media(max-width:760px){
   .helen-greeting-text{font-size:34px}
 }
+
+
+/* V9 – správa staníc a jasná nápoveda dvojkliku */
+.station-manage-hint{
+  margin:8px 0 10px;
+  padding:8px 10px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.035);
+  color:rgba(255,255,255,.66);
+  font-size:12px;
+  line-height:1.35;
+  letter-spacing:.015em;
+}
+.station-manage-hint.new-mode{
+  color:#FFE58A;
+  border-color:rgba(255,211,63,.30);
+  background:linear-gradient(135deg,rgba(255,211,63,.09),rgba(255,100,111,.08));
+  font-weight:800;
+}
+.station-manage-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.station-manage-actions .danger{
+  margin-right:auto;
+}
+#customGroup,#assignGroup{
+  width:100%;
+}
+@media(max-width:520px){
+  .station-manage-actions{justify-content:stretch}
+  .station-manage-actions button{flex:1 1 auto}
+  .station-manage-actions .danger{margin-right:0}
+}
