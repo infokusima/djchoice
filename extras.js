@@ -916,7 +916,72 @@
     }, 700);
   }
 
+
+
+  // V8 – stabilizácia priečinka MOJE a dialógu PRIDAJ.
+  // MOJE má byť viditeľné aj keď je zatiaľ prázdne.
+  function installMojeAndAddFix() {
+    const filters = document.querySelector("#filters");
+    const dialog = document.querySelector("#stationDialog");
+    const form = document.querySelector("#stationForm");
+    const cancelBtn = document.querySelector("#cancelStationBtn");
+
+    const closeAddDialog = () => {
+      try { dialog?.close(); } catch {}
+      try { form?.reset(); } catch {}
+    };
+
+    if (cancelBtn) cancelBtn.addEventListener("click", closeAddDialog);
+
+    // Klik do tmavého pozadia mimo formulára tiež zavrie okno.
+    if (dialog) {
+      dialog.addEventListener("click", (e) => {
+        if (e.target === dialog) closeAddDialog();
+      });
+    }
+
+    const ensureMoje = () => {
+      if (!filters) return;
+      const buttons = Array.from(filters.querySelectorAll(".filter"));
+      let moje = buttons.find(b => b.textContent.trim() === "Moje");
+      if (moje) return;
+
+      moje = document.createElement("button");
+      moje.type = "button";
+      moje.className = "filter";
+      try {
+        if (typeof filter !== "undefined" && filter === "Moje") moje.classList.add("active");
+      } catch {}
+      moje.textContent = "Moje";
+      moje.addEventListener("click", () => {
+        try {
+          filter = "Moje";
+          if (typeof render === "function") render();
+        } catch {}
+      });
+
+      let order = ["Všetky","HELEN","SK","OLDIES","JAZZ","ONLY","ETNO","WORLD","CZ","PL","Moje","Slovo","Hudba","NEW"];
+      try {
+        if (typeof GROUP_ORDER !== "undefined" && Array.isArray(GROUP_ORDER)) order = GROUP_ORDER;
+      } catch {}
+      const myIndex = order.indexOf("Moje");
+      let before = null;
+      for (const b of buttons) {
+        const idx = order.indexOf(b.textContent.trim());
+        if (myIndex >= 0 && idx > myIndex) { before = b; break; }
+      }
+      filters.insertBefore(moje, before);
+    };
+
+    ensureMoje();
+    if (filters) {
+      const obs = new MutationObserver(() => queueMicrotask(ensureMoje));
+      obs.observe(filters, {childList:true});
+    }
+  }
+
   installHelenFeature();
+  installMojeAndAddFix();
   addOnlyStations();
   installTodayCard();
   installKineticEq();
