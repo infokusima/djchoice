@@ -1,0 +1,104 @@
+
+/* DJ Choice Web – doplnky: kinetický EQ a panel DNES */
+
+.note{
+  display:none !important;
+}
+
+.equalizer{
+  position:relative;
+  overflow:hidden;
+}
+
+.eq-bar{
+  animation:none !important;
+  transition:none !important;
+  position:relative;
+  z-index:1;
+}
+
+.eq-ball{
+  position:absolute;
+  left:0;
+  top:0;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:#FFF2A8;
+  border:1px solid rgba(255,255,255,.72);
+  box-shadow:0 0 8px rgba(255,242,168,.48);
+  pointer-events:none;
+  z-index:4;
+  will-change:transform;
+}
+
+.today-card{
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:18px;
+  background:rgba(255,255,255,.035);
+  padding:18px 20px 17px;
+  min-width:0;
+}
+
+.today-weekday{
+  margin-top:5px;
+  text-transform:uppercase;
+  letter-spacing:.13em;
+  font-size:13px;
+  font-weight:800;
+  color:var(--yellow,#FFD33F);
+}
+
+.today-date{
+  margin-top:3px;
+  font-size:16px;
+  font-weight:650;
+  color:rgba(255,255,255,.88);
+}
+
+.today-clock{
+  margin-top:6px;
+  font-family:"Cascadia Mono","Consolas","Courier New",monospace;
+  font-size:40px;
+  line-height:1.08;
+  letter-spacing:.035em;
+  font-variant-numeric:tabular-nums;
+  font-weight:700;
+  color:#fff;
+  white-space:nowrap;
+}
+
+.today-meta{
+  margin-top:10px;
+  padding-top:9px;
+  border-top:1px solid rgba(255,255,255,.08);
+  font-size:13px;
+  line-height:1.45;
+}
+
+.today-nameday{
+  color:var(--muted,#BFAED9);
+}
+
+.today-holiday{
+  margin-top:4px;
+  color:var(--red,#FF646F);
+  font-weight:700;
+}
+
+.today-holiday.hidden{
+  display:none;
+}
+
+@media (max-width:900px){
+  .today-clock{font-size:34px}
+}
+
+@media (max-width:520px){
+  .today-card{padding:16px}
+  .today-clock{font-size:31px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .eq-ball{display:none}
+}
