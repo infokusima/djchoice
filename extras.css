@@ -349,3 +349,37 @@ body.dj-jukebox .helen-photo-card{
   .helen-photo{transition-duration:.01ms !important}
   .helen-photo-card{animation:none !important}
 }
+
+
+/* V7 – HELEN uvítanie pred prvým obrázkom */
+.helen-greeting{
+  position:absolute;
+  inset:0;
+  z-index:3;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  text-align:center;
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255,255,255,.14) 0 38px, transparent 40px),
+    radial-gradient(circle at 72% 74%, rgba(255,211,63,.16) 0 52px, transparent 54px),
+    linear-gradient(135deg, rgba(216,72,108,.92), rgba(102,48,129,.95));
+  backdrop-filter: blur(1px);
+}
+.helen-greeting.hidden{display:none}
+.helen-greeting-text{
+  font-family:"Brush Script MT","Segoe Script","Lucida Handwriting",cursive;
+  font-size:48px;
+  line-height:1.06;
+  color:#FFF4F8;
+  text-shadow:0 2px 0 rgba(0,0,0,.12), 0 8px 24px rgba(0,0,0,.28);
+  letter-spacing:.02em;
+}
+.helen-photo-card.helen-intro-active .helen-photo,
+.helen-photo-card.helen-intro-active .helen-photo-bg{
+  opacity:0;
+}
+@media(max-width:760px){
+  .helen-greeting-text{font-size:34px}
+}

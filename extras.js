@@ -801,13 +801,18 @@
     photoCard.setAttribute("aria-label", "HELEN – fotogaléria");
     photoCard.innerHTML = `
       <div id="helenPhotoBg" class="helen-photo-bg" aria-hidden="true"></div>
+      <div id="helenGreeting" class="helen-greeting hidden" aria-live="polite">
+        <div class="helen-greeting-text">Ahoj Helen</div>
+      </div>
       <img id="helenPhoto" class="helen-photo" alt="Darčeková fotogaléria HELEN">
     `;
     row.appendChild(photoCard);
 
     const img = photoCard.querySelector("#helenPhoto");
     const bg = photoCard.querySelector("#helenPhotoBg");
+    const greeting = photoCard.querySelector("#helenGreeting");
     let timer = 0;
+    let introTimer = 0;
     let bag = [];
     let last = -1;
     let hasShownFirst = false;
@@ -820,6 +825,16 @@
     const refillBag = () => {
       bag = HELEN_PHOTOS.map((_, i) => i).filter(i => i !== last);
       shuffle(bag);
+    };
+
+    const showGreeting = () => {
+      photoCard.classList.add("helen-intro-active");
+      greeting.classList.remove("hidden");
+    };
+
+    const hideGreeting = () => {
+      photoCard.classList.remove("helen-intro-active");
+      greeting.classList.add("hidden");
     };
 
     const showIndex = index => {
@@ -849,13 +864,30 @@
       photoCard.classList.toggle("hidden", !active);
       if (active) {
         if (!hasShownFirst) {
-          hasShownFirst = true;
-          showIndex(0); // narodeninová koláž sa ukáže ako prvá
+          if (!introTimer) {
+            showGreeting();
+            introTimer = window.setTimeout(() => {
+              introTimer = 0;
+              hasShownFirst = true;
+              hideGreeting();
+              showIndex(0); // narodeninová koláž sa ukáže ako prvá po pozdrave
+              if (!timer) timer = window.setInterval(showNextRandom, 60000);
+            }, 5000);
+          }
+        } else {
+          hideGreeting();
+          if (!timer) timer = window.setInterval(showNextRandom, 60000);
         }
-        if (!timer) timer = window.setInterval(showNextRandom, 60000);
-      } else if (timer) {
-        clearInterval(timer);
-        timer = 0;
+      } else {
+        hideGreeting();
+        if (introTimer) {
+          clearTimeout(introTimer);
+          introTimer = 0;
+        }
+        if (timer) {
+          clearInterval(timer);
+          timer = 0;
+        }
       }
     };
 
