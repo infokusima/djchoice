@@ -248,27 +248,39 @@ body.dj-jukebox .now-playing{
 }
 
 
-/* V5 – HELEN darčekový priečinok a fotogaléria */
+/* V6 – HELEN fotookno ako plávajúci overlay vedľa loga; nič v layoute neposúva */
 .logo-helen-row{
-  display:flex;
-  align-items:stretch;
-  gap:12px;
-  flex-wrap:wrap;
-  min-width:0;
-}
-.logo-helen-row > .logo-card,
-.helen-photo-card{
+  position:relative;
+  display:block;
   width:260px;
   height:165px;
-  flex:0 0 260px;
+  min-width:0;
+  overflow:visible;
+  isolation:isolate;
+}
+.logo-helen-row > .logo-card{
+  width:260px;
+  height:165px;
+  position:relative;
+  z-index:1;
 }
 .helen-photo-card{
-  position:relative;
+  position:absolute;
+  top:0;
+  left:calc(100% + 12px);
+  width:260px;
+  height:165px;
+  z-index:40;
   overflow:hidden;
   border-radius:28px;
   background:var(--panel2,#43266E);
-  border:1px solid rgba(255,211,63,.20);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.025);
+  border:1px solid rgba(255,211,63,.28);
+  box-shadow:0 12px 30px rgba(0,0,0,.34), inset 0 0 0 1px rgba(255,255,255,.025);
+  animation:helenFloatIn .32s ease both;
+}
+@keyframes helenFloatIn{
+  from{opacity:0;transform:translateX(-8px) scale(.985)}
+  to{opacity:1;transform:translateX(0) scale(1)}
 }
 .helen-photo-bg{
   position:absolute;
@@ -308,11 +320,32 @@ body.dj-jukebox .now-playing{
 body.dj-jukebox .helen-photo-card{
   filter:brightness(1.05) saturate(1.08);
 }
+
+/* Pri stredne úzkom okne nech fotka stále pláva; zmenší sa len toľko, aby neodrezala celý pravý panel. */
+@media(max-width:1100px) and (min-width:761px){
+  .helen-photo-card{
+    width:230px;
+    height:165px;
+  }
+}
+
+/* Mobil: žiadny reflow. Fotka pláva v pravom hornom rohu loga ako menšie druhé okno. */
 @media(max-width:760px){
-  .logo-helen-row{display:grid;grid-template-columns:1fr;gap:10px}
-  .logo-helen-row > .logo-card,
-  .helen-photo-card{width:100%;height:145px;flex-basis:auto}
+  .logo-helen-row,
+  .logo-helen-row > .logo-card{
+    width:100%;
+    height:145px;
+  }
+  .helen-photo-card{
+    top:8px;
+    left:auto;
+    right:8px;
+    width:min(44%,220px);
+    height:129px;
+    border-radius:22px;
+  }
 }
 @media (prefers-reduced-motion: reduce){
   .helen-photo{transition-duration:.01ms !important}
+  .helen-photo-card{animation:none !important}
 }
