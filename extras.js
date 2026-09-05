@@ -269,15 +269,29 @@
       let holidayOk = false;
 
       try {
-        const r = await fetch(`https://nameday.abalin.net/api/V2/today/${encodeURIComponent(APP_TZ)}`, {cache: "no-store"});
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        nameday = extractNameday(await r.json());
-        namedayOk = true;
+        const [, month, day] = date.split("-");
+        const endpoints = [
+          `https://nameday.abalin.net/api/V2/today?timezone=${encodeURIComponent(APP_TZ)}`,
+          `https://nameday.abalin.net/api/V2/date?day=${Number(day)}&month=${Number(month)}`
+        ];
+        for (const endpoint of endpoints) {
+          try {
+            const r = await fetch(endpoint, {headers: {"Accept": "application/json"}, cache: "no-store"});
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            const value = extractNameday(await r.json());
+            namedayOk = true;
+            if (value) {
+              nameday = value;
+              break;
+            }
+          } catch {}
+        }
       } catch {}
 
       try {
         const u = new URL("https://openholidaysapi.org/PublicHolidays");
         u.searchParams.set("countryIsoCode", "SK");
+        u.searchParams.set("languageIsoCode", "SK");
         u.searchParams.set("validFrom", date);
         u.searchParams.set("validTo", date);
         const r = await fetch(u, {headers: {"Accept": "application/json"}, cache: "no-store"});
@@ -310,16 +324,25 @@
   }
 
   function installKineticEq() {
-    try {
-      if (typeof eq === "undefined" || !eq) return;
-      const bars = [...eq.querySelectorAll(".eq-bar")];
-      if (!bars.length) return;
+    const eqEl = document.querySelector("#equalizer");
+    if (!eqEl) return;
 
-      let ball = eq.querySelector(".eq-ball");
+    let attempts = 0;
+    const start = () => {
+      const bars = [...eqEl.querySelectorAll(".eq-bar")];
+      if (!bars.length) {
+        if (attempts++ < 30) setTimeout(start, 100);
+        return;
+      }
+      if (eqEl.dataset.kineticReady === "1") return;
+      eqEl.dataset.kineticReady = "1";
+
+      let ball = eqEl.querySelector(".eq-ball");
       if (!ball) {
         ball = document.createElement("div");
         ball.className = "eq-ball";
-        eq.appendChild(ball);
+        ball.setAttribute("aria-hidden", "true");
+        eqEl.appendChild(ball);
       }
 
       const states = bars.map((bar, i) => ({
@@ -332,10 +355,14 @@
         i
       }));
 
-      let bx = 40, by = 25, vx = 95, vy = -40;
+      let bx = 46, by = 24, vx = 105, vy = -35;
       let last = performance.now();
       let calmUntil = 0;
       let nextCalmAt = last + 20000 + Math.random() * 20000;
+      const audioEl = document.querySelector("#audio");
+      const radius = 7;
+
+      ball.style.transform = `translate(${(bx-radius).toFixed(1)}px, ${(by-radius).toFixed(1)}px)`;
 
       const chooseTarget = (s, now, calm) => {
         if (calm) {
@@ -356,7 +383,7 @@
         const dt = Math.min(0.04, Math.max(0.001, (now - last) / 1000));
         last = now;
 
-        if (typeof audio !== "undefined" && audio.paused) {
+        if (!audioEl || audioEl.paused) {
           requestAnimationFrame(loop);
           return;
         }
@@ -373,17 +400,14 @@
           const step = s.speed * dt;
           if (Math.abs(s.target - s.value) <= step) s.value = s.target;
           else s.value += dir * step;
-          if (s.pulse > 0) {
-            s.pulse = Math.max(0, s.pulse - 80 * dt);
-          }
+          if (s.pulse > 0) s.pulse = Math.max(0, s.pulse - 80 * dt);
           const h = Math.max(5, Math.min(98, s.value + s.pulse));
           s.bar.style.height = `${h}%`;
         }
 
-        const rect = eq.getBoundingClientRect();
-        const W = Math.max(50, rect.width);
-        const H = Math.max(40, rect.height);
-        const r = 5;
+        const rect = eqEl.getBoundingClientRect();
+        const W = Math.max(80, rect.width);
+        const H = Math.max(70, rect.height);
         const oldY = by;
 
         const g = calm ? 160 : 320;
@@ -392,47 +416,47 @@
         bx += vx * dt;
         by += vy * dt;
 
-        if (bx < r) {
-          bx = r;
+        if (bx < radius) {
+          bx = radius;
           vx = Math.abs(vx) * (0.86 + Math.random() * 0.08);
-        } else if (bx > W - r) {
-          bx = W - r;
+        } else if (bx > W - radius) {
+          bx = W - radius;
           vx = -Math.abs(vx) * (0.86 + Math.random() * 0.08);
         }
 
-        if (by < r) {
-          by = r;
+        if (by < radius) {
+          by = radius;
           vy = Math.abs(vy) * 0.82;
         }
 
         const barIndex = Math.max(0, Math.min(states.length - 1, Math.floor((bx / W) * states.length)));
         const s = states[barIndex];
         const barTop = H - ((Math.max(5, Math.min(98, s.value + s.pulse))) / 100) * H;
-        const oldBottom = oldY + r;
-        const newBottom = by + r;
+        const oldBottom = oldY + radius;
+        const newBottom = by + radius;
 
-        if (vy > 0 && oldBottom <= barTop + 2 && newBottom >= barTop) {
-          by = barTop - r;
-          vy = -Math.max(calm ? 70 : 105, Math.abs(vy) * (0.74 + Math.random() * 0.15));
+        if (vy > 0 && oldBottom <= barTop + 3 && newBottom >= barTop) {
+          by = barTop - radius;
+          vy = -Math.max(calm ? 72 : 110, Math.abs(vy) * (0.74 + Math.random() * 0.15));
           vx += (Math.random() - 0.5) * (calm ? 22 : 65);
-          vx = Math.max(-180, Math.min(180, vx));
-          s.pulse = Math.min(25, s.pulse + 8 + Math.random() * 13);
+          vx = Math.max(-190, Math.min(190, vx));
+          s.pulse = Math.min(26, s.pulse + 9 + Math.random() * 13);
         }
 
-        if (by > H - r) {
-          by = H - r;
-          vy = -Math.max(80, Math.abs(vy) * (0.72 + Math.random() * 0.12));
+        if (by > H - radius) {
+          by = H - radius;
+          vy = -Math.max(85, Math.abs(vy) * (0.72 + Math.random() * 0.12));
           vx += (Math.random() - 0.5) * 45;
         }
 
-        ball.style.transform = `translate(${(bx - r).toFixed(1)}px, ${(by - r).toFixed(1)}px)`;
+        ball.style.transform = `translate(${(bx - radius).toFixed(1)}px, ${(by - radius).toFixed(1)}px)`;
         requestAnimationFrame(loop);
       };
 
       requestAnimationFrame(loop);
-    } catch (e) {
-      console.warn("DJ Choice kinetic EQ failed", e);
-    }
+    };
+
+    start();
   }
 
   addOnlyStations();

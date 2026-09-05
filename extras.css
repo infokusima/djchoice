@@ -21,14 +21,14 @@
   position:absolute;
   left:0;
   top:0;
-  width:10px;
-  height:10px;
+  width:14px;
+  height:14px;
   border-radius:50%;
-  background:#FFF2A8;
-  border:1px solid rgba(255,255,255,.72);
-  box-shadow:0 0 8px rgba(255,242,168,.48);
+  background:#FFF7C8;
+  border:2px solid rgba(255,255,255,.95);
+  box-shadow:0 0 4px rgba(255,255,255,.9),0 0 12px rgba(255,211,63,.75);
   pointer-events:none;
-  z-index:4;
+  z-index:10;
   will-change:transform;
 }
 
@@ -99,6 +99,3 @@
   .today-clock{font-size:31px}
 }
 
-@media (prefers-reduced-motion:reduce){
-  .eq-ball{display:none}
-}
