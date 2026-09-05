@@ -22,6 +22,27 @@ const LOCAL_KEY = "djchoice_web_v1_local";
 const ASSIGNED_KEY = "djchoice_web_v1_assigned";
 
 const seedStations = [
+  {name:"Rádio Slovensko",url:"https://icecast.stv.livebox.sk/slovensko_128.mp3",kind:"Hovorené",description:"Slovensko • správy, publicistika, hudba • 128 kbps MP3",groups:["SK"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://www.stvr.sk/radio/slovensko"},
+  {name:"Radio Slovakia International",url:"https://icecast.stv.livebox.sk/rsi_128.mp3",kind:"Hovorené",description:"Slovensko • zahraničné vysielanie STVR • 128 kbps MP3",groups:["SK"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://www.stvr.sk/radio/rsi"},
+  {name:"Rádio Lumen",url:"https://audio.lumen.sk/live64.mp3",kind:"Hovorené",description:"Slovensko • kresťanské rádio • 64 kbps MP3",groups:["SK"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://www.lumen.sk"},
+  {name:"Rádio 7",url:"https://play.radio7.sk/128",kind:"Hudba",description:"Slovensko • kresťanská hudba a slovo • 128 kbps",groups:["SK"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://radio7.sk"},
+  {name:"Rádio Rock",url:"https://stream.bauermedia.sk/rock-hi.mp3",kind:"Hudba",description:"Slovensko • rock • 128 kbps MP3",groups:["SK"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://radiorock.sk"},
+  {name:"Europa 2",url:"https://stream.bauermedia.sk/europa2.mp3",kind:"Hudba",description:"Slovensko • pop, dance, hity • MP3",groups:["SK"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://www.europa2.sk"},
+  {name:"Rádio Viva",url:"https://stream.sepia.sk/viva128.mp3",kind:"Hudba",description:"Slovensko • slovenské a české hity • 128 kbps MP3",groups:["SK"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://radioviva.sk"},
+  {name:"Rádio Vlna",url:"https://stream.radiovlna.sk/vlna-hi.mp3",kind:"Hudba",description:"Slovensko • hity overené časom • 128 kbps MP3",groups:["SK","OLDIES"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://radiovlna.sk"},
+  {name:"Vlna Golden Hits",url:"https://stream.radiovlna.sk/gold-hi.mp3",kind:"Hudba",description:"Slovensko • 60s/70s a zlaté hity • 128 kbps MP3",groups:["SK","OLDIES"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://radiovlna.sk"},
+  {name:"Vlna Oldies Party",url:"https://stream.radiovlna.sk/party-hi.mp3",kind:"Hudba",description:"Slovensko • oldies party • 128 kbps MP3",groups:["SK","OLDIES"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://radiovlna.sk"},
+
+  {name:"Radio 1 Praha",url:"https://stream.rcs.revma.com/stk8hrvb938uv",kind:"Hudba",description:"Česko • alternatíva, elektronika, autorské relácie • AAC 128 kbps",groups:["CZ"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://www.radio1.cz"},
+  {name:"ČRo Jazz",url:"https://rozhlas.stream/jazz.mp3",kind:"Hudba",description:"Česko • jazz 24/7 • 128 kbps MP3",groups:["CZ","JAZZ"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://jazz.rozhlas.cz"},
+  {name:"ČRo Vltava",url:"https://rozhlas.stream/vltava.mp3",kind:"Hovorené",description:"Česko • kultúra, klasika, jazz, literatúra • 128 kbps MP3",groups:["CZ"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://vltava.rozhlas.cz"},
+  {name:"ČRo D-dur",url:"https://rozhlas.stream/ddur.mp3",kind:"Hudba",description:"Česko • klasická hudba • 128 kbps MP3",groups:["CZ"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://d-dur.rozhlas.cz"},
+  {name:"ČRo Radio Wave",url:"https://rozhlas.stream/radio_wave.mp3",kind:"Hudba",description:"Česko • alternatíva, elektronika, nové smery • 128 kbps MP3",groups:["CZ"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://wave.rozhlas.cz"},
+  {name:"ČRo Radiožurnál",url:"https://rozhlas.stream/radiozurnal.mp3",kind:"Hovorené",description:"Česko • správy, publicistika, rozhovory • 128 kbps MP3",groups:["CZ"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://radiozurnal.rozhlas.cz"},
+  {name:"ČRo Dvojka",url:"https://rozhlas.stream/dvojka.mp3",kind:"Hovorené",description:"Česko • talkshow, hry, čítanie, hudba • 128 kbps MP3",groups:["CZ"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://dvojka.rozhlas.cz"},
+  {name:"ČRo Plus",url:"https://rozhlas.stream/plus.mp3",kind:"Hovorené",description:"Česko • správy, analýzy, diskusie • 128 kbps MP3",groups:["CZ"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://plus.rozhlas.cz"},
+  {name:"ČRo Pohoda",url:"https://rozhlas.stream/pohoda.mp3",kind:"Hudba",description:"Česko • piesne a spomienky • 128 kbps MP3",groups:["CZ","OLDIES"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://pohoda.rozhlas.cz"},
+
   {name:"KEXP Seattle",url:"https://kexp.streamguys1.com/kexp160.aac",kind:"Hudba",description:"Seattle • indie, rock, objavy",groups:["WORLD"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://www.kexp.org"},
   {name:"NTS 1",url:"https://stream-relay-geo.ntslive.net/stream?client=direct",kind:"Hudba",description:"London • underground, DJ kultúra, elektronika",groups:["WORLD"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://www.nts.live"},
   {name:"KCRW Eclectic24",url:"https://kcrw.streamguys1.com/kcrw_128k_mp3_e24",kind:"Hudba",description:"Los Angeles • kurátorovaná eklektická hudba",groups:["WORLD"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://www.kcrw.com"},
