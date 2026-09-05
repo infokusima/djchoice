@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="sk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#24143D">
+  <meta name="description" content="DJ Choice – súkromné webové internetové rádio">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self';
+                 img-src 'self' data: https:; media-src https: blob:;
+                 connect-src 'self' https://*.api.radio-browser.info https://*.radio-browser.info https:;
+                 manifest-src 'self'; worker-src 'self';">
+  <title>DJ Choice</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+</head>
+<body>
+  <header class="hero">
+    <div class="brand">
+      <div class="brand-main"><span>DJ</span> <strong>CHOICE</strong></div>
+      <div class="brand-sub">hudba • hovorené slovo • web rádio</div>
+    </div>
+    <div class="hero-actions">
+      <button id="installBtn" class="ghost hidden">PRIDAŤ NA PLOCHU</button>
+      <span class="safe-badge">HTTPS • DIRECT</span>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="library panel">
+      <div class="library-top">
+        <input id="search" type="search" placeholder="Hľadaj stanicu…" autocomplete="off">
+        <button id="addBtn" class="accent">＋ PRIDAJ</button>
+      </div>
+
+      <div id="filters" class="filters"></div>
+
+      <div id="stationList" class="station-list" aria-live="polite"></div>
+
+      <div class="library-footer">
+        <span id="stationCount">0 staníc</span>
+        <button id="deleteLocalBtn" class="danger small hidden">ODSTRÁNIŤ Z MOJE</button>
+      </div>
+    </section>
+
+    <section class="player">
+      <div class="logo-card">
+        <img id="stationLogo" alt="" class="station-logo hidden">
+        <div id="logoFallback" class="logo-fallback">DJ</div>
+      </div>
+
+      <div id="kind" class="eyebrow">WEB RÁDIO</div>
+      <h1 id="stationName">Vyber stanicu</h1>
+      <p id="stationDesc" class="description">V tejto verzii sa prehrávajú iba priame HTTPS streamy.</p>
+
+      <div id="state" class="state idle">NEPREHRÁVA SA</div>
+      <div id="now" class="now-playing"></div>
+
+      <div class="controls">
+        <button id="playBtn" class="play">▶ PREHRAŤ</button>
+        <button id="stopBtn" class="stop">■ STOP</button>
+      </div>
+
+      <label class="volume-row">
+        <span>HLASITOSŤ</span>
+        <input id="volume" type="range" min="0" max="1" step="0.01" value="0.85">
+      </label>
+
+      <div class="eq-title">DYNAMIKA</div>
+      <div id="equalizer" class="equalizer" aria-hidden="true"></div>
+
+      <div id="browserMessage" class="browser-message">
+        Zvuk ide priamo zo servera rádia do tvojho prehliadača. DJ Choice ho nepreposiela cez vlastný server.
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="quote-card">
+        <div class="side-title">MYŠLIENKA / ÚSMEV</div>
+        <blockquote id="quoteText">Hudba dáva myšlienkam priestor.</blockquote>
+        <div id="quoteAuthor" class="quote-author">— DJ Choice</div>
+      </section>
+
+      <section class="status-card">
+        <div class="side-title">WEB SAFE</div>
+        <div class="status-line"><span>Stream</span><strong>HTTPS</strong></div>
+        <div class="status-line"><span>Proxy server</span><strong>NIE</strong></div>
+        <div class="status-line"><span>Účet</span><strong>NETREBA</strong></div>
+        <div class="status-line"><span>Fotky</span><strong>V1 VYPNUTÉ</strong></div>
+      </section>
+
+      <section class="new-help">
+        <div class="side-title">NEW</div>
+        <p>Pri štarte sa načíta malý výber nových funkčných HTTPS staníc. Dvojklik na NEW → <b>Pridať do…</b>.</p>
+      </section>
+    </aside>
+  </main>
+
+  <audio id="audio" preload="none"></audio>
+
+  <dialog id="stationDialog">
+    <form method="dialog" id="stationForm">
+      <h2>Pridaj vlastnú stanicu</h2>
+      <label>Názov
+        <input id="customName" required maxlength="80">
+      </label>
+      <label>HTTPS stream
+        <input id="customUrl" required type="url" placeholder="https://…">
+      </label>
+      <p class="dialog-note">Webová verzia zámerne prijíma iba HTTPS stream.</p>
+      <div class="dialog-actions">
+        <button value="cancel" class="ghost">ZRUŠIŤ</button>
+        <button id="saveCustomBtn" value="default" class="accent">ULOŽIŤ DO MOJE</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="assignDialog">
+    <form method="dialog">
+      <h2>Pridať do…</h2>
+      <div id="assignStationName" class="assign-name"></div>
+      <label>Priečinok
+        <select id="assignGroup">
+          <option>Moje</option>
+          <option>SK</option>
+          <option>OLDIES</option>
+          <option>JAZZ</option>
+          <option>ONLY</option>
+          <option>ETNO</option>
+          <option>WORLD</option>
+          <option>CZ</option>
+          <option>PL</option>
+          <option>Slovo</option>
+          <option>Hudba</option>
+        </select>
+      </label>
+      <div class="dialog-actions">
+        <button value="cancel" class="ghost">ZRUŠIŤ</button>
+        <button id="assignSaveBtn" value="default" class="accent">PRIDAŤ</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
