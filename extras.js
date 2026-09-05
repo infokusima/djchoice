@@ -306,7 +306,7 @@
         if (!holidayOk) holiday = cached.holiday || "";
       }
 
-      if (nameday) namedayEl.textContent = `Meniny: ${nameday}`;
+      if (nameday) namedayEl.textContent = `Meniny má ${nameday}`;
       else namedayEl.textContent = namedayOk ? "Meniny: —" : "Meniny: údaj nedostupný";
 
       if (holiday) {
@@ -355,7 +355,10 @@
         i
       }));
 
-      let bx = 46, by = 24, vx = 105, vy = -35;
+      let bx = 48;
+      let by = 34;
+      let vx = 125;
+      let vy = -155;
       let last = performance.now();
       let calmUntil = 0;
       let nextCalmAt = last + 20000 + Math.random() * 20000;
@@ -379,8 +382,14 @@
         }
       };
 
+      const kickHorizontal = strength => {
+        vx += (Math.random() - 0.5) * strength;
+        if (Math.abs(vx) < 60) vx = (Math.random() < 0.5 ? -1 : 1) * (85 + Math.random() * 55);
+        vx = Math.max(-215, Math.min(215, vx));
+      };
+
       const loop = now => {
-        const dt = Math.min(0.04, Math.max(0.001, (now - last) / 1000));
+        const dt = Math.min(0.035, Math.max(0.001, (now - last) / 1000));
         last = now;
 
         if (!audioEl || audioEl.paused) {
@@ -405,48 +414,68 @@
           s.bar.style.height = `${h}%`;
         }
 
-        const rect = eqEl.getBoundingClientRect();
-        const W = Math.max(80, rect.width);
-        const H = Math.max(70, rect.height);
+        // Najprv nech prehliadač spočíta SKUTOČNÚ polohu stĺpcov vrátane paddingu a medzier.
+        const eqRect = eqEl.getBoundingClientRect();
+        const W = Math.max(80, eqRect.width);
+        const H = Math.max(70, eqRect.height);
         const oldY = by;
 
-        const g = calm ? 160 : 320;
+        const g = calm ? 210 : 390;
         vx *= calm ? 0.997 : 0.999;
         vy += g * dt;
         bx += vx * dt;
         by += vy * dt;
 
-        if (bx < radius) {
-          bx = radius;
-          vx = Math.abs(vx) * (0.86 + Math.random() * 0.08);
-        } else if (bx > W - radius) {
-          bx = W - radius;
-          vx = -Math.abs(vx) * (0.86 + Math.random() * 0.08);
+        if (bx < radius + 2) {
+          bx = radius + 2;
+          vx = Math.abs(vx) * (0.88 + Math.random() * 0.08);
+          kickHorizontal(24);
+        } else if (bx > W - radius - 2) {
+          bx = W - radius - 2;
+          vx = -Math.abs(vx) * (0.88 + Math.random() * 0.08);
+          kickHorizontal(24);
         }
 
-        if (by < radius) {
-          by = radius;
-          vy = Math.abs(vy) * 0.82;
+        if (by < radius + 2) {
+          by = radius + 2;
+          vy = Math.abs(vy) * 0.84;
         }
 
-        const barIndex = Math.max(0, Math.min(states.length - 1, Math.floor((bx / W) * states.length)));
-        const s = states[barIndex];
-        const barTop = H - ((Math.max(5, Math.min(98, s.value + s.pulse))) / 100) * H;
-        const oldBottom = oldY + radius;
-        const newBottom = by + radius;
-
-        if (vy > 0 && oldBottom <= barTop + 3 && newBottom >= barTop) {
-          by = barTop - radius;
-          vy = -Math.max(calm ? 72 : 110, Math.abs(vy) * (0.74 + Math.random() * 0.15));
-          vx += (Math.random() - 0.5) * (calm ? 22 : 65);
-          vx = Math.max(-190, Math.min(190, vx));
-          s.pulse = Math.min(26, s.pulse + 9 + Math.random() * 13);
+        // Kolízia sa už nepočíta z percentuálnej výšky. Berieme reálny DOM obdĺžnik
+        // stĺpca, takže loptička sa odráža presne od toho, čo používateľ vidí.
+        let hit = null;
+        if (vy > 0) {
+          const oldBottom = oldY + radius;
+          const newBottom = by + radius;
+          for (const s of states) {
+            const r = s.bar.getBoundingClientRect();
+            const left = r.left - eqRect.left;
+            const right = r.right - eqRect.left;
+            const top = r.top - eqRect.top;
+            const overlapsX = bx + radius * 0.72 >= left && bx - radius * 0.72 <= right;
+            const crossedTop = oldBottom <= top + 5 && newBottom >= top - 1;
+            const nearSurface = newBottom >= top - 1 && by <= top + radius + 5;
+            if (overlapsX && (crossedTop || nearSurface)) {
+              if (!hit || top < hit.top) hit = {s, top};
+            }
+          }
         }
 
-        if (by > H - radius) {
-          by = H - radius;
-          vy = -Math.max(85, Math.abs(vy) * (0.72 + Math.random() * 0.12));
-          vx += (Math.random() - 0.5) * 45;
+        if (hit) {
+          by = hit.top - radius - 0.5;
+          const rebound = calm ? 135 + Math.random() * 45 : 185 + Math.random() * 85;
+          vy = -rebound;
+          kickHorizontal(calm ? 38 : 82);
+          hit.s.pulse = Math.min(30, hit.s.pulse + 11 + Math.random() * 15);
+        }
+
+        // Dno je len záchranná sieť. Ak loptička trafí medzeru medzi stĺpcami,
+        // necupká po čiare: dostane poriadny nový výskok späť do poľa.
+        const floorY = H - radius - 4;
+        if (by > floorY) {
+          by = floorY;
+          vy = -(calm ? 145 + Math.random() * 45 : 205 + Math.random() * 75);
+          kickHorizontal(calm ? 55 : 110);
         }
 
         ball.style.transform = `translate(${(bx - radius).toFixed(1)}px, ${(by - radius).toFixed(1)}px)`;

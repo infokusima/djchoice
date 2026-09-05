@@ -77,7 +77,10 @@
 }
 
 .today-nameday{
-  color:var(--muted,#BFAED9);
+  color:var(--red,#FF646F);
+  font-size:18px;
+  font-weight:800;
+  line-height:1.35;
 }
 
 .today-holiday{
