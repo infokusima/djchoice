@@ -1,19 +1,13 @@
-const CACHE="djchoice-web-v2-shell";
-const SHELL=["./","./index.html","./styles.css","./app.js","./manifest.webmanifest","./icon.svg"];
-self.addEventListener("install",e=>{
-  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)));
-  self.skipWaiting();
+self.addEventListener("install",()=>self.skipWaiting());
+self.addEventListener("activate",event=>{
+  event.waitUntil((async()=>{
+    const keys=await caches.keys();
+    await Promise.all(keys.filter(k=>k.startsWith("djchoice-")).map(k=>caches.delete(k)));
+    await self.clients.claim();
+  })());
 });
-self.addEventListener("activate",e=>{
-  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
-  self.clients.claim();
-});
-self.addEventListener("fetch",e=>{
-  const u=new URL(e.request.url);
-  if(u.origin!==location.origin) return;
-  e.respondWith(fetch(e.request).then(r=>{
-    const copy=r.clone();
-    caches.open(CACHE).then(c=>c.put(e.request,copy)).catch(()=>{});
-    return r;
-  }).catch(()=>caches.match(e.request)));
+self.addEventListener("fetch",event=>{
+  const url=new URL(event.request.url);
+  if(url.origin!==location.origin) return;
+  event.respondWith(fetch(event.request,{cache:"no-store"}));
 });
