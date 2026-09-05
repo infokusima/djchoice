@@ -1447,9 +1447,55 @@
     try { if (typeof render === "function") render(); else { ensureUserFolderButtons(); updateManageButton(); } } catch { updateManageButton(); }
   }
 
+
+  // V12 – pri prepnutí priečinka sa zoznam staníc vždy vráti hore.
+  function installStationScrollReset() {
+    const filtersEl = document.querySelector("#filters");
+    const stationListEl = document.querySelector("#stationList");
+    if (!filtersEl || !stationListEl) return;
+
+    const activeFolder = () => {
+      const active = filtersEl.querySelector(".filter.active");
+      return active ? active.textContent.trim() : "";
+    };
+
+    let lastFolder = activeFolder();
+
+    const resetIfFolderChanged = () => {
+      const now = activeFolder();
+      if (now && now !== lastFolder) {
+        lastFolder = now;
+        stationListEl.scrollTop = 0;
+      }
+    };
+
+    // Hlavná cesta: klik na priečinok.
+    filtersEl.addEventListener("click", (e) => {
+      const button = e.target.closest(".filter");
+      if (!button) return;
+      requestAnimationFrame(() => {
+        stationListEl.scrollTop = 0;
+        lastFolder = activeFolder() || button.textContent.trim();
+      });
+    });
+
+    // Poistka pre priečinky, ktoré sa vytvoria/premenujú dynamicky
+    // alebo ak app.js zmení active triedu až po prekreslení.
+    const observer = new MutationObserver(() => {
+      requestAnimationFrame(resetIfFolderChanged);
+    });
+    observer.observe(filtersEl, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["class"]
+    });
+  }
+
   installHelenFeature();
   installMojeAndAddFix();
   installStationManagerV10();
+  installStationScrollReset();
   addOnlyStations();
   installTodayCard();
   installKineticEq();
