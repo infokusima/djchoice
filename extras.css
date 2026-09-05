@@ -246,3 +246,73 @@ body.dj-jukebox .now-playing{
     transition-duration:.01ms !important;
   }
 }
+
+
+/* V5 – HELEN darčekový priečinok a fotogaléria */
+.logo-helen-row{
+  display:flex;
+  align-items:stretch;
+  gap:12px;
+  flex-wrap:wrap;
+  min-width:0;
+}
+.logo-helen-row > .logo-card,
+.helen-photo-card{
+  width:260px;
+  height:165px;
+  flex:0 0 260px;
+}
+.helen-photo-card{
+  position:relative;
+  overflow:hidden;
+  border-radius:28px;
+  background:var(--panel2,#43266E);
+  border:1px solid rgba(255,211,63,.20);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.025);
+}
+.helen-photo-bg{
+  position:absolute;
+  inset:-14px;
+  background-position:center;
+  background-size:cover;
+  filter:blur(13px) brightness(.56) saturate(1.15);
+  opacity:.78;
+  transform:scale(1.08);
+}
+.helen-photo{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center;
+  z-index:1;
+  opacity:1;
+  transition:opacity .44s ease, transform .7s ease;
+}
+.helen-photo.helen-photo-changing{
+  opacity:.10;
+  transform:scale(.985);
+}
+.filter.helen-filter{
+  border:1px solid rgba(255,211,63,.34);
+  color:#FFE58A;
+  background:linear-gradient(135deg,rgba(255,100,111,.22),rgba(255,211,63,.10)),var(--card);
+}
+.filter.helen-filter.active{
+  color:#fff;
+  background:linear-gradient(135deg,#D94B61,#A83C69);
+  border-color:#FFD66B;
+  box-shadow:0 0 0 1px rgba(255,214,107,.25),0 0 16px rgba(217,75,97,.22);
+}
+body.dj-jukebox .helen-photo-card{
+  filter:brightness(1.05) saturate(1.08);
+}
+@media(max-width:760px){
+  .logo-helen-row{display:grid;grid-template-columns:1fr;gap:10px}
+  .logo-helen-row > .logo-card,
+  .helen-photo-card{width:100%;height:145px;flex-basis:auto}
+}
+@media (prefers-reduced-motion: reduce){
+  .helen-photo{transition-duration:.01ms !important}
+}

@@ -710,6 +710,181 @@
     if (!audioEl.paused) schedule();
   }
 
+
+  // V5 – darčekový priečinok HELEN: kresťanské rádiá + lokálna fotogaléria.
+  const HELEN_STATIONS = [
+    {name:"Rádio Lumen",url:"https://audio.lumen.sk/live64.mp3",kind:"Kresťanské",description:"Slovensko • katolícke rádio • živé vysielanie",groups:["HELEN","SK"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://www.lumen.sk"},
+    {name:"Rádio 7 SK",url:"https://play.radio7.sk/128",kind:"Kresťanské",description:"Slovensko • kresťanské rádio • hudba a slovo",groups:["HELEN","SK"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://radio7.sk"},
+    {name:"Rádio Mária Slovensko",url:"https://dreamsiteradiocp5.com/proxy/radiomariaslomp3?mp=/stream.mp3",kind:"Kresťanské",description:"Slovensko • katolícke rádio • modlitba a duchovné slovo",groups:["HELEN","SK"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://www.radiomaria.sk"},
+    {name:"Mirjam Rádio – Mária Rádió Felvidék",url:"https://stream.mariaradio.hu:8000/mr",kind:"Kresťanské",description:"Slovensko • maďarské kresťanské vysielanie",groups:["HELEN","SK"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://mariaradio.sk"},
+    {name:"Rádio 7 CZ",url:"https://icecast8.play.cz/radio7-128.mp3",kind:"Kresťanské",description:"Česko • TWR • kresťanské slovo a hudba",groups:["HELEN","CZ"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://radio7.cz"},
+    {name:"Radio Proglas",url:"https://icecast2.play.cz/proglas128",kind:"Kresťanské",description:"Česko • kresťanské rodinné rádio • 128 kbps MP3",groups:["HELEN","CZ"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://www.proglas.cz"},
+    {name:"CBN Gospel",url:"https://cbnradio.streamguys1.com/gospel-128K",kind:"Hudba",description:"Gospel • USA • CBN • 128 kbps MP3",groups:["HELEN","WORLD"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://www.cbn.com"},
+    {name:"CBN Praise",url:"https://cbnradio.streamguys1.com/praise-128K",kind:"Hudba",description:"Praise & Worship • USA • CBN • 128 kbps MP3",groups:["HELEN","WORLD"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://www.cbn.com"},
+    {name:"CBN Southern Gospel",url:"https://cbnradio.streamguys1.com/southern-gospel-128K",kind:"Hudba",description:"Southern Gospel • USA • CBN • 128 kbps MP3",groups:["HELEN","WORLD"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://www.cbn.com"},
+    {name:"K-LOVE",url:"https://maestro.emfcdn.com/stream_for/k-love/iheart/aac",kind:"Hudba",description:"Contemporary Christian • USA • K-LOVE",groups:["HELEN","WORLD"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://www.klove.com"},
+    {name:"Christian Hits FM",url:"https://streaming.live365.com/a55870",kind:"Hudba",description:"Christian hits • USA • Live365",groups:["HELEN","WORLD"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://christianhitsfm.com"},
+    {name:"DOC Radio – Christian Hits",url:"https://server10.reliastream.com/proxy/docradio/stream",kind:"Hudba",description:"Christian pop, rock, reggae & blues • USA",groups:["HELEN","WORLD"],logo:"https://www.google.com/s2/favicons?sz=128&domain_url=https://docradio.org"}
+  ];
+
+  const HELEN_PHOTOS = [
+    "helen01.jpg","helen02.jpg","helen03.jpg","helen04.jpg","helen05.jpg",
+    "helen06.jpg","helen07.jpg","helen08.jpg","helen09.jpg"
+  ];
+
+  function ensureHelenGroup() {
+    try {
+      if (typeof GROUP_ORDER !== "undefined" && Array.isArray(GROUP_ORDER) && !GROUP_ORDER.includes("HELEN")) {
+        GROUP_ORDER.splice(1, 0, "HELEN");
+      }
+      if (typeof NEW_GROUPS !== "undefined" && Array.isArray(NEW_GROUPS) && !NEW_GROUPS.includes("HELEN")) {
+        NEW_GROUPS.push("HELEN");
+      }
+    } catch {}
+
+    const select = document.querySelector("#assignGroup");
+    if (select && !Array.from(select.options).some(o => o.value === "HELEN" || o.textContent === "HELEN")) {
+      const option = document.createElement("option");
+      option.value = "HELEN";
+      option.textContent = "HELEN";
+      select.insertBefore(option, select.firstChild);
+    }
+  }
+
+  function mergeHelenStations() {
+    ensureHelenGroup();
+    try {
+      if (typeof baseStations === "undefined" || !Array.isArray(baseStations)) return false;
+      let changed = false;
+      for (const station of HELEN_STATIONS) {
+        const found = baseStations.find(s => String(s.url || "").trim() === station.url);
+        if (found) {
+          const groups = new Set(Array.isArray(found.groups) ? found.groups : []);
+          for (const g of station.groups) groups.add(g);
+          const merged = [...groups];
+          if (JSON.stringify(merged) !== JSON.stringify(found.groups || [])) {
+            found.groups = merged;
+            changed = true;
+          }
+          if (!found.logo && station.logo) found.logo = station.logo;
+        } else {
+          baseStations.push({...station, groups:[...station.groups], source:"helen-gift"});
+          changed = true;
+        }
+      }
+      if (changed && typeof render === "function") render();
+      return true;
+    } catch (e) {
+      console.warn("DJ Choice HELEN stations init failed", e);
+      return false;
+    }
+  }
+
+  function decorateHelenFilter() {
+    document.querySelectorAll("#filters .filter").forEach(btn => {
+      btn.classList.toggle("helen-filter", btn.textContent.trim() === "HELEN");
+    });
+  }
+
+  function installHelenGallery() {
+    const logo = document.querySelector(".logo-card");
+    if (!logo || document.querySelector("#helenPhotoCard")) return;
+
+    const row = document.createElement("div");
+    row.className = "logo-helen-row";
+    logo.parentNode.insertBefore(row, logo);
+    row.appendChild(logo);
+
+    const photoCard = document.createElement("div");
+    photoCard.id = "helenPhotoCard";
+    photoCard.className = "helen-photo-card hidden";
+    photoCard.setAttribute("aria-label", "HELEN – fotogaléria");
+    photoCard.innerHTML = `
+      <div id="helenPhotoBg" class="helen-photo-bg" aria-hidden="true"></div>
+      <img id="helenPhoto" class="helen-photo" alt="Darčeková fotogaléria HELEN">
+    `;
+    row.appendChild(photoCard);
+
+    const img = photoCard.querySelector("#helenPhoto");
+    const bg = photoCard.querySelector("#helenPhotoBg");
+    let timer = 0;
+    let bag = [];
+    let last = -1;
+    let hasShownFirst = false;
+
+    HELEN_PHOTOS.forEach(src => {
+      const preload = new Image();
+      preload.src = src;
+    });
+
+    const refillBag = () => {
+      bag = HELEN_PHOTOS.map((_, i) => i).filter(i => i !== last);
+      shuffle(bag);
+    };
+
+    const showIndex = index => {
+      if (index < 0 || index >= HELEN_PHOTOS.length) return;
+      last = index;
+      const src = HELEN_PHOTOS[index];
+      img.classList.add("helen-photo-changing");
+      window.setTimeout(() => {
+        img.src = src;
+        bg.style.backgroundImage = `url("${src}")`;
+        img.classList.remove("helen-photo-changing");
+      }, 220);
+    };
+
+    const showNextRandom = () => {
+      if (!bag.length) refillBag();
+      const index = bag.shift();
+      showIndex(index);
+    };
+
+    const isHelenActive = () => Array.from(document.querySelectorAll("#filters .filter.active"))
+      .some(btn => btn.textContent.trim() === "HELEN");
+
+    const sync = () => {
+      decorateHelenFilter();
+      const active = isHelenActive();
+      photoCard.classList.toggle("hidden", !active);
+      if (active) {
+        if (!hasShownFirst) {
+          hasShownFirst = true;
+          showIndex(0); // narodeninová koláž sa ukáže ako prvá
+        }
+        if (!timer) timer = window.setInterval(showNextRandom, 60000);
+      } else if (timer) {
+        clearInterval(timer);
+        timer = 0;
+      }
+    };
+
+    const filters = document.querySelector("#filters");
+    if (filters) {
+      filters.addEventListener("click", () => window.setTimeout(sync, 0));
+      const observer = new MutationObserver(() => window.setTimeout(sync, 0));
+      observer.observe(filters, {childList:true, subtree:true, attributes:true, attributeFilter:["class"]});
+    }
+    sync();
+  }
+
+  function installHelenFeature() {
+    ensureHelenGroup();
+    installHelenGallery();
+    mergeHelenStations();
+    decorateHelenFilter();
+
+    // loadSeed() môže katalóg krátko po štarte prepísať; niekoľko krátkych kontrol
+    // zabezpečí HELEN v oboch verziách app.js bez trvalého polling-u.
+    let tries = 0;
+    const retry = window.setInterval(() => {
+      mergeHelenStations();
+      decorateHelenFilter();
+      if (++tries >= 9) clearInterval(retry);
+    }, 700);
+  }
+
+  installHelenFeature();
   addOnlyStations();
   installTodayCard();
   installKineticEq();
