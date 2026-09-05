@@ -20,8 +20,10 @@ button{cursor:pointer;border:0}
     radial-gradient(circle at 92% -110%,rgba(69,217,230,.7) 0 110px,transparent 112px),
     var(--bg);
 }
-.brand-main{font-size:34px;font-weight:700;letter-spacing:-1.2px}
+.brand-main{font-size:34px;font-weight:700;letter-spacing:-1.2px;display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
 .brand-main strong{color:var(--yellow)}
+.brand-by{font-size:16px;font-weight:400;letter-spacing:0;color:var(--muted);margin-left:4px;white-space:nowrap}
+.brand-signature{font-family:"Segoe Script","Brush Script MT","Lucida Handwriting",cursive;color:var(--red);font-size:25px;font-weight:400;letter-spacing:.2px}
 .brand-sub{margin-top:3px;color:var(--muted);font-size:14px}
 .hero-actions{display:flex;gap:12px;align-items:center}
 .safe-badge{border:1px solid var(--border);border-radius:999px;padding:9px 13px;color:var(--lime);
@@ -145,7 +147,7 @@ dialog input,dialog select{
 }
 @media(max-width:760px){
   .hero{padding:14px 16px;align-items:flex-start}
-  .brand-main{font-size:28px}.brand-sub{font-size:12px}
+  .brand-main{font-size:28px;gap:5px}.brand-by{font-size:14px}.brand-signature{font-size:21px}.brand-sub{font-size:12px}
   .safe-badge{display:none}
   .app-shell{display:block;padding:0 12px 18px}
   .library{min-height:520px;margin-bottom:16px}
