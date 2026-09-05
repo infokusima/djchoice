@@ -146,9 +146,92 @@
     }
   }
 
+  let thoughtTimer = null;
+  let thoughtDeck = [];
+  let thoughtPos = 0;
+  let thoughtTone = -1;
+  let thoughtUi = null;
+
+  function installThoughtUi() {
+    if (thoughtUi) return thoughtUi;
+    const text = document.querySelector("#quoteText");
+    const author = document.querySelector("#quoteAuthor");
+    const card = text?.closest(".quote-card");
+    if (!text || !author || !card) return null;
+
+    // Pôvodný app.js si každých 40 s ďalej "otáča" svoje skryté prvky.
+    // Viditeľnú myšlienku preberá tento doplnok, takže ju môžeme nechať
+    // pokojne 80–100 sekúnd bez zásahu do jadra rádia.
+    text.id = "quoteTextDisplay";
+    author.id = "quoteAuthorDisplay";
+
+    const dummyText = document.createElement("span");
+    dummyText.id = "quoteText";
+    dummyText.hidden = true;
+    const dummyAuthor = document.createElement("span");
+    dummyAuthor.id = "quoteAuthor";
+    dummyAuthor.hidden = true;
+    card.append(dummyText, dummyAuthor);
+
+    thoughtUi = {text, author, card};
+    return thoughtUi;
+  }
+
+  function paintThought(item, immediate = false) {
+    const ui = installThoughtUi();
+    if (!ui || !item) return;
+    const [text, author] = item;
+
+    thoughtTone = (thoughtTone + 1) % 5;
+    ui.card.classList.remove("thought-tone-0", "thought-tone-1", "thought-tone-2", "thought-tone-3", "thought-tone-4");
+    ui.card.classList.add(`thought-tone-${thoughtTone}`);
+
+    const apply = () => {
+      ui.text.textContent = text;
+      ui.author.textContent = "— " + (author || "DJ Choice");
+      requestAnimationFrame(() => ui.card.classList.remove("thought-changing"));
+    };
+
+    if (immediate) {
+      apply();
+    } else {
+      ui.card.classList.add("thought-changing");
+      setTimeout(apply, 260);
+    }
+  }
+
+  function scheduleThought() {
+    clearTimeout(thoughtTimer);
+    // Pôvodne 40 s. Teraz približne dvojnásobok, s malou náhodou,
+    // aby panel nepôsobil ako mechanické hodiny.
+    const wait = 80000 + Math.random() * 20000;
+    thoughtTimer = setTimeout(showNextThought, wait);
+  }
+
+  function showNextThought() {
+    if (!thoughtDeck.length) return;
+    if (thoughtPos >= thoughtDeck.length) {
+      shuffle(thoughtDeck);
+      thoughtPos = 0;
+    }
+    paintThought(thoughtDeck[thoughtPos++], false);
+    scheduleThought();
+  }
+
+  function startThoughtCycle(items) {
+    const clean = (items || [])
+      .map(x => Array.isArray(x) ? [String(x[0] || "").trim(), String(x[1] || "DJ Choice").trim()] : [String(x.text || "").trim(), String(x.author || "DJ Choice").trim()])
+      .filter(x => x[0]);
+    if (!clean.length) return;
+    thoughtDeck = shuffle([...clean]);
+    thoughtPos = 0;
+    paintThought(thoughtDeck[thoughtPos++], true);
+    scheduleThought();
+  }
+
   async function loadThoughts() {
+    installThoughtUi();
     try {
-      if (typeof quotes === "undefined" || !Array.isArray(quotes)) return;
       const r = await fetch("./thoughts.json?v=1", {cache: "no-store"});
       if (!r.ok) throw new Error("HTTP " + r.status);
       const data = await r.json();
@@ -157,25 +240,17 @@
       const normalized = data
         .map(x => [String(x.text || "").trim(), String(x.author || "DJ Choice").trim()])
         .filter(x => x[0]);
-      shuffle(normalized);
-      quotes.splice(0, quotes.length, ...normalized);
-      if (typeof qi !== "undefined") qi = -1;
-      if (typeof rotateQuote === "function") rotateQuote();
 
-      let leftStart = false;
-      setInterval(() => {
-        try {
-          if (typeof qi === "undefined" || quotes.length < 2) return;
-          if (qi > 1) leftStart = true;
-          if (leftStart && qi === 0) {
-            shuffle(quotes);
-            qi = -1;
-            leftStart = false;
-          }
-        } catch {}
-      }, 2500);
+      // Zachováme aj globálny zásobník kvôli kompatibilite s pôvodnou aplikáciou.
+      if (typeof quotes !== "undefined" && Array.isArray(quotes)) {
+        quotes.splice(0, quotes.length, ...normalized);
+      }
+      startThoughtCycle(normalized);
     } catch (e) {
       console.warn("DJ Choice thoughts load failed", e);
+      try {
+        if (typeof quotes !== "undefined" && Array.isArray(quotes)) startThoughtCycle(quotes);
+      } catch {}
     }
   }
 
@@ -488,9 +563,158 @@
     start();
   }
 
+  function installJukeboxIdle() {
+    const body = document.body;
+    const audioEl = document.querySelector("#audio");
+    if (!body || !audioEl) return;
+
+    let idleTimer = null;
+    let lastMoveReset = 0;
+    const IDLE_MS = 75000;
+
+    const leaveIdle = () => body.classList.remove("dj-jukebox");
+    const arm = () => {
+      clearTimeout(idleTimer);
+      if (audioEl.paused) {
+        leaveIdle();
+        return;
+      }
+      idleTimer = setTimeout(() => {
+        if (!audioEl.paused) body.classList.add("dj-jukebox");
+      }, IDLE_MS);
+    };
+    const activity = () => {
+      leaveIdle();
+      arm();
+    };
+    const pointerActivity = () => {
+      const now = performance.now();
+      if (body.classList.contains("dj-jukebox") || now - lastMoveReset > 2500) {
+        lastMoveReset = now;
+        activity();
+      }
+    };
+
+    document.addEventListener("pointermove", pointerActivity, {passive:true});
+    document.addEventListener("pointerdown", activity, {passive:true});
+    document.addEventListener("wheel", activity, {passive:true});
+    document.addEventListener("touchstart", activity, {passive:true});
+    document.addEventListener("keydown", activity);
+    audioEl.addEventListener("playing", activity);
+    audioEl.addEventListener("pause", () => { clearTimeout(idleTimer); leaveIdle(); });
+    audioEl.addEventListener("ended", () => { clearTimeout(idleTimer); leaveIdle(); });
+  }
+
+  function installLogoFlagWave() {
+    const card = document.querySelector(".logo-card");
+    const audioEl = document.querySelector("#audio");
+    const sourceImg = document.querySelector("#stationLogo");
+    const sourceFallback = document.querySelector("#logoFallback");
+    if (!card || !audioEl || !sourceImg || !sourceFallback) return;
+
+    let timer = null;
+    let firstWave = true;
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
+    // Staré flash/wiggle/pulse necháme v app.js bežať, ale vizuálne ich zruší CSS.
+    const cleanOldFx = () => {
+      if (["fx-flash", "fx-wiggle", "fx-pulse"].some(c => card.classList.contains(c))) {
+        card.classList.remove("fx-flash", "fx-wiggle", "fx-pulse");
+      }
+    };
+    const fxObserver = new MutationObserver(cleanOldFx);
+    fxObserver.observe(card, {attributes:true, attributeFilter:["class"]});
+
+    const schedule = () => {
+      clearTimeout(timer);
+      if (audioEl.paused || reducedMotion) return;
+      const idle = document.body.classList.contains("dj-jukebox");
+      const delay = firstWave ? 4500 : (idle ? 14000 + Math.random()*10000 : 23000 + Math.random()*15000);
+      firstWave = false;
+      timer = setTimeout(runWave, delay);
+    };
+
+    const runWave = () => {
+      if (audioEl.paused || reducedMotion) return schedule();
+      cleanOldFx();
+      card.querySelector(".logo-flag-wave")?.remove();
+
+      const cr = card.getBoundingClientRect();
+      const W = cr.width;
+      const H = cr.height;
+      if (W < 40 || H < 40) return schedule();
+
+      const imgVisible = !sourceImg.classList.contains("hidden") && !!(sourceImg.currentSrc || sourceImg.src);
+      const fallbackVisible = !sourceFallback.classList.contains("hidden");
+      if (!imgVisible && !fallbackVisible) return schedule();
+
+      const layer = document.createElement("div");
+      layer.className = "logo-flag-wave";
+      const slices = 12;
+      const sw = W / slices;
+
+      let sourceRect = null;
+      if (imgVisible) sourceRect = sourceImg.getBoundingClientRect();
+
+      for (let i = 0; i < slices; i++) {
+        const left = i * sw;
+        const slice = document.createElement("div");
+        slice.className = "logo-wave-slice";
+        slice.style.left = `${left}px`;
+        slice.style.width = `${sw + 1.2}px`;
+        slice.style.setProperty("--wave-amp", `${5.2 + Math.sin((i/slices)*Math.PI)*3.2}px`);
+        slice.style.animationDelay = `${i * 0.115}s`;
+
+        const inner = document.createElement("div");
+        inner.className = "logo-wave-inner";
+        inner.style.width = `${W}px`;
+        inner.style.height = `${H}px`;
+        inner.style.left = `${-left}px`;
+
+        if (imgVisible && sourceRect) {
+          const im = document.createElement("img");
+          im.src = sourceImg.currentSrc || sourceImg.src;
+          im.alt = "";
+          im.style.left = `${sourceRect.left - cr.left}px`;
+          im.style.top = `${sourceRect.top - cr.top}px`;
+          im.style.width = `${sourceRect.width}px`;
+          im.style.height = `${sourceRect.height}px`;
+          inner.appendChild(im);
+        } else {
+          const fb = document.createElement("div");
+          fb.className = "logo-wave-fallback";
+          fb.textContent = sourceFallback.textContent || "DJ";
+          inner.appendChild(fb);
+        }
+        slice.appendChild(inner);
+        layer.appendChild(slice);
+      }
+
+      card.appendChild(layer);
+      card.classList.add("flag-wave-active");
+      const total = 5600 + (slices - 1) * 115;
+      setTimeout(() => {
+        card.classList.remove("flag-wave-active");
+        layer.remove();
+        schedule();
+      }, total);
+    };
+
+    audioEl.addEventListener("playing", schedule);
+    audioEl.addEventListener("pause", () => {
+      clearTimeout(timer);
+      card.classList.remove("flag-wave-active");
+      card.querySelector(".logo-flag-wave")?.remove();
+    });
+    audioEl.addEventListener("ended", () => clearTimeout(timer));
+    if (!audioEl.paused) schedule();
+  }
+
   addOnlyStations();
   installTodayCard();
   installKineticEq();
+  installJukeboxIdle();
+  installLogoFlagWave();
   loadThoughts();
 
   // Pôvodný NEW loader sa spustí pri štarte aplikácie; tento výber ho po krátkej chvíli nahradí.

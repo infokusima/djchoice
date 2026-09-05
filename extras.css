@@ -102,3 +102,147 @@
   .today-clock{font-size:31px}
 }
 
+
+/* V4 – JUKEBOX idle, pomalá vlajková vlna loga, pokojnejšie myšlienky */
+
+/* Staré náhodné efekty z app.js vizuálne vypneme. Nahrádza ich vlajková vlna. */
+.logo-card.fx-flash,
+.logo-card.fx-wiggle,
+.logo-card.fx-pulse{
+  animation:none !important;
+  transform:none !important;
+  filter:none !important;
+  box-shadow:none !important;
+}
+
+.logo-card > .station-logo,
+.logo-card > .logo-fallback{
+  transition:opacity .18s linear;
+}
+.logo-card.flag-wave-active > .station-logo,
+.logo-card.flag-wave-active > .logo-fallback{
+  opacity:0;
+}
+.logo-flag-wave{
+  position:absolute;
+  inset:0;
+  z-index:5;
+  overflow:hidden;
+  pointer-events:none;
+}
+.logo-wave-slice{
+  position:absolute;
+  top:0;
+  bottom:0;
+  overflow:hidden;
+  transform-origin:50% 50%;
+  animation:djFlagSlice 5.6s cubic-bezier(.42,0,.22,1) both;
+  will-change:transform;
+}
+.logo-wave-inner{
+  position:absolute;
+  top:0;
+}
+.logo-wave-inner img{
+  position:absolute;
+  object-fit:contain;
+}
+.logo-wave-fallback{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  font-size:44px;
+  font-weight:800;
+  color:var(--yellow,#FFD33F);
+}
+@keyframes djFlagSlice{
+  0%,100%{transform:translateY(0) skewY(0deg)}
+  18%{transform:translateY(-6px) skewY(-1.2deg)}
+  42%{transform:translateY(8px) skewY(1.35deg)}
+  68%{transform:translateY(-4px) skewY(-.8deg)}
+  86%{transform:translateY(2px) skewY(.4deg)}
+}
+
+/* Myšlienka – nová farba je zámerný signál, že sa text zmenil. */
+.quote-card blockquote,
+.quote-card .quote-author{
+  transition:color .72s ease, opacity .45s ease, transform .45s ease;
+}
+.quote-card.thought-tone-0 blockquote{color:#FFD66B}
+.quote-card.thought-tone-1 blockquote{color:#7FE7F0}
+.quote-card.thought-tone-2 blockquote{color:#BEEB83}
+.quote-card.thought-tone-3 blockquote{color:#FF91BA}
+.quote-card.thought-tone-4 blockquote{color:#C9B0FF}
+.quote-card.thought-changing blockquote,
+.quote-card.thought-changing .quote-author{
+  opacity:.18;
+  transform:translateY(3px);
+}
+
+/* JUKEBOX: po 75 s bez zásahu sa ovládanie utíši, hudobný obsah zostane dominantný. */
+.library,
+.controls,
+.volume-row,
+.browser-message,
+.status-card,
+.new-help,
+.hero-actions,
+.library-top,
+.filters,
+.library-footer,
+.player .description,
+.player .eyebrow,
+.player .state{
+  transition:opacity .9s ease, filter .9s ease, transform .9s ease;
+}
+.quote-card,
+.today-card,
+.logo-card,
+.equalizer,
+.player h1,
+.now-playing{
+  transition:opacity .9s ease, filter .9s ease, box-shadow .9s ease;
+}
+body.dj-jukebox .library{
+  opacity:.17;
+  filter:saturate(.45) brightness(.72);
+}
+body.dj-jukebox .controls,
+body.dj-jukebox .volume-row,
+body.dj-jukebox .browser-message,
+body.dj-jukebox .hero-actions{
+  opacity:.10;
+}
+body.dj-jukebox .status-card,
+body.dj-jukebox .new-help{
+  opacity:.16;
+  filter:saturate(.45);
+}
+body.dj-jukebox .player .description,
+body.dj-jukebox .player .eyebrow,
+body.dj-jukebox .player .state{
+  opacity:.30;
+}
+body.dj-jukebox .quote-card,
+body.dj-jukebox .today-card{
+  box-shadow:0 0 0 1px rgba(255,255,255,.045),0 10px 34px rgba(0,0,0,.12);
+}
+body.dj-jukebox .logo-card,
+body.dj-jukebox .equalizer{
+  filter:brightness(1.04) saturate(1.06);
+}
+body.dj-jukebox .player h1,
+body.dj-jukebox .now-playing{
+  filter:brightness(1.08);
+}
+
+@media (prefers-reduced-motion: reduce){
+  .logo-wave-slice{animation:none !important}
+  .quote-card blockquote,
+  .quote-card .quote-author,
+  .library,.controls,.volume-row,.browser-message,.status-card,.new-help,.hero-actions,
+  .player .description,.player .eyebrow,.player .state,.quote-card,.today-card,.logo-card,.equalizer{
+    transition-duration:.01ms !important;
+  }
+}
