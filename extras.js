@@ -982,26 +982,46 @@
 
 
 
-  // V9 – jednotná správa staníc: dvojklik = uložiť/presunúť/vymazať.
-  // Manuálne pridaná stanica zostáva natrvalo v localStorage a používateľ si volí priečinok.
-  function installStationManagerV9() {
+  // V10 – jednoduchá správa staníc bez dvojkliku.
+  // Vybraná stanica sa spravuje tretím tlačidlom v prehrávači.
+  // NEW = ULOŽ DO…, ostatné priečinky = PRESUŇ DO….
+  // Používateľské priečinky sú dynamické a ukladajú sa v localStorage.
+  function installStationManagerV10() {
     const DELETED_KEY = "djchoice_web_v1_deleted";
     const OVERRIDE_KEY = "djchoice_web_v1_group_overrides";
+    const USER_GROUPS_KEY = "djchoice_web_v1_user_groups";
+    const SYSTEM_GROUPS = ["Moje","HELEN","SK","OLDIES","JAZZ","ONLY","ETNO","WORLD","CZ","PL","Slovo","Hudba"];
+    const RESERVED_GROUPS = new Set(["Všetky","NEW", ...SYSTEM_GROUPS].map(x => x.toLocaleLowerCase("sk")));
+
     const stationListEl = document.querySelector("#stationList");
-    const filtersElV9 = document.querySelector("#filters");
+    const filtersEl = document.querySelector("#filters");
     const dialog = document.querySelector("#assignDialog");
     const groupSelect = document.querySelector("#assignGroup");
     const saveBtn = document.querySelector("#assignSaveBtn");
     const deleteBtn = document.querySelector("#manageDeleteBtn");
     const cancelBtn = document.querySelector("#manageCancelBtn");
     const title = document.querySelector("#manageStationTitle");
+    const note = document.querySelector("#manageStationNote");
     const assignName = document.querySelector("#assignStationName");
+    const moveBtn = document.querySelector("#moveStationBtn");
+
     const addBtn = document.querySelector("#addBtn");
     const customGroup = document.querySelector("#customGroup");
     const saveCustomBtn = document.querySelector("#saveCustomBtn");
     const stationDialog = document.querySelector("#stationDialog");
     const stationForm = document.querySelector("#stationForm");
-    if (!stationListEl || !dialog || !groupSelect || !saveBtn) return;
+
+    const foldersBtn = document.querySelector("#foldersBtn");
+    const foldersDialog = document.querySelector("#foldersDialog");
+    const foldersCloseBtn = document.querySelector("#foldersCloseBtn");
+    const newFolderName = document.querySelector("#newFolderName");
+    const addFolderBtn = document.querySelector("#addFolderBtn");
+    const renameFolderSelect = document.querySelector("#renameFolderSelect");
+    const renameFolderName = document.querySelector("#renameFolderName");
+    const renameFolderBtn = document.querySelector("#renameFolderBtn");
+    const renameFolderBlock = document.querySelector("#renameFolderBlock");
+
+    if (!stationListEl || !dialog || !groupSelect || !saveBtn || !moveBtn) return;
 
     const loadJson = (key, fallback) => {
       try {
@@ -1009,31 +1029,64 @@
         return v ?? fallback;
       } catch { return fallback; }
     };
+    const stationUrl = s => String(s?.url || "").trim();
+    const normalizeFolder = value => String(value || "").trim().replace(/\s+/g, " ").slice(0, 24);
+    const sameName = (a,b) => String(a).toLocaleLowerCase("sk") === String(b).toLocaleLowerCase("sk");
+
     const deletedUrls = new Set((loadJson(DELETED_KEY, []) || []).filter(Boolean));
     const groupOverrides = loadJson(OVERRIDE_KEY, {}) || {};
+    let userGroups = (loadJson(USER_GROUPS_KEY, []) || []).map(normalizeFolder).filter(Boolean);
+    userGroups = userGroups.filter((g,i,a) => !RESERVED_GROUPS.has(g.toLocaleLowerCase("sk")) && a.findIndex(x => sameName(x,g)) === i);
     let pendingManage = null;
 
     const persistDeleted = () => localStorage.setItem(DELETED_KEY, JSON.stringify([...deletedUrls]));
     const persistOverrides = () => localStorage.setItem(OVERRIDE_KEY, JSON.stringify(groupOverrides));
-    const stationUrl = s => String(s?.url || "").trim();
+    const persistUserGroups = () => localStorage.setItem(USER_GROUPS_KEY, JSON.stringify(userGroups));
+    persistUserGroups();
 
-    // Staršie uloženia z pôvodného dialógu zachováme: ak už existuje assigned kópia
-    // pevnej stanice, jej cieľový priečinok berieme ako používateľovu voľbu.
+    const allTargetGroups = () => [...SYSTEM_GROUPS, ...userGroups];
+    const isTargetGroup = g => allTargetGroups().some(x => x === g);
+
+    const syncSelect = select => {
+      if (!select) return;
+      [...select.querySelectorAll("option[data-user-folder='1']")].forEach(o => o.remove());
+      for (const g of userGroups) {
+        const o = document.createElement("option");
+        o.value = g;
+        o.textContent = g;
+        o.dataset.userFolder = "1";
+        select.appendChild(o);
+      }
+    };
+    const syncFolderSelects = () => {
+      syncSelect(groupSelect);
+      syncSelect(customGroup);
+      if (renameFolderSelect) {
+        renameFolderSelect.innerHTML = "";
+        for (const g of userGroups) {
+          const o = document.createElement("option");
+          o.value = g;
+          o.textContent = g;
+          renameFolderSelect.appendChild(o);
+        }
+      }
+      if (renameFolderBlock) renameFolderBlock.classList.toggle("hidden", userGroups.length === 0);
+    };
+
+    // Zachováme staršie priradenia z predchádzajúcich verzií.
     try {
       if (typeof assignedStations !== "undefined" && Array.isArray(assignedStations)) {
         for (const a of assignedStations) {
           const u = stationUrl(a);
           if (!u) continue;
           const baseHit = typeof baseStations !== "undefined" && Array.isArray(baseStations) && baseStations.some(b => stationUrl(b) === u);
-          if (baseHit && Array.isArray(a.groups) && a.groups.length && !groupOverrides[u]) {
-            groupOverrides[u] = [a.groups[0]];
-          }
+          if (baseHit && Array.isArray(a.groups) && a.groups.length && !groupOverrides[u]) groupOverrides[u] = [a.groups[0]];
         }
         persistOverrides();
       }
     } catch {}
 
-    // Tombstones: VYMAZAŤ skryje stanicu natrvalo v tomto prehliadači.
+    // VYMAZAŤ = trvalý tombstone v tomto prehliadači.
     try {
       const originalAllStations = allStations;
       allStations = function() {
@@ -1050,8 +1103,7 @@
       };
     } catch {}
 
-    // Používateľský presun pevnej stanice prepisuje jej pôvodný priečinok,
-    // ale typové priečinky Hudba/Slovo zostanú zachované.
+    // Presun pevnej stanice prepisuje jej hlavný priečinok. Typové Hudba/Slovo a Moje zostávajú.
     try {
       const originalGroupsFor = groupsFor;
       groupsFor = function(s) {
@@ -1066,71 +1118,101 @@
       };
     } catch {}
 
+    // Staré dvojklikové správanie z app.js úplne zablokujeme. Jediná cesta je tretie tlačidlo.
+    stationListEl.addEventListener("dblclick", e => {
+      if (!e.target.closest(".station")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }, true);
+
     let hint = document.querySelector("#stationManageHint");
     if (!hint) {
       hint = document.createElement("div");
       hint.id = "stationManageHint";
-      hint.className = "station-manage-hint";
+      hint.className = "station-manage-hint hidden";
       stationListEl.parentNode.insertBefore(hint, stationListEl);
     }
 
-    const updateHint = () => {
+    const ensureUserFolderButtons = () => {
+      if (!filtersEl) return;
+      // existujúce custom tlačidlá po core renderi už spravidla neexistujú; ak áno, odstránime ich a vytvoríme čisto.
+      [...filtersEl.querySelectorAll(".filter[data-user-folder='1']")].forEach(b => b.remove());
+      const newBtn = [...filtersEl.querySelectorAll(".filter")].find(b => b.textContent.trim() === "NEW");
+      for (const g of userGroups) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "filter user-folder-filter";
+        b.dataset.userFolder = "1";
+        b.dataset.group = g;
+        b.textContent = g;
+        try { if (typeof filter !== "undefined" && filter === g) b.classList.add("active"); } catch {}
+        b.addEventListener("click", () => {
+          try { filter = g; if (typeof render === "function") render(); } catch {}
+        });
+        filtersEl.insertBefore(b, newBtn || null);
+      }
+    };
+
+    const currentPrimaryGroup = s => {
+      const u = stationUrl(s);
+      if (groupOverrides[u]?.[0] && isTargetGroup(groupOverrides[u][0])) return groupOverrides[u][0];
+      try {
+        if (typeof filter !== "undefined" && isTargetGroup(filter) && filter !== "NEW") return filter;
+      } catch {}
+      const gs = Array.isArray(s?.groups) ? s.groups : [];
+      return gs.find(isTargetGroup) || "Moje";
+    };
+
+    const updateManageButton = () => {
+      let s = null;
+      try { s = typeof current !== "undefined" ? current : null; } catch {}
+      moveBtn.disabled = !s;
+      moveBtn.textContent = !s ? "ULOŽ / PRESUŇ…" : (s.newDiscovery ? "💾 ULOŽ DO…" : "⇄ PRESUŇ DO…");
       let currentFilter = "";
       try { currentFilter = typeof filter !== "undefined" ? filter : ""; } catch {}
       const isNew = currentFilter === "NEW";
+      hint.classList.toggle("hidden", !isNew);
       hint.classList.toggle("new-mode", isNew);
-      hint.textContent = isNew
-        ? "DVOJKLIK NA STANICU → ULOŽIŤ DO PRIEČINKA"
-        : "Dvojklik na stanicu → pridať / presunúť / vymazať";
+      if (isNew) hint.textContent = "Vyber stanicu → v strede stlač ULOŽ DO…";
     };
 
-    // Po každom renderi si naviažeme aktuálne DOM riadky na aktuálne stanice.
+    // Po renderi doplníme používateľské priečinky a obnovíme stav tretieho tlačidla.
     try {
       const originalRender = render;
       render = function() {
         originalRender();
-        let visible = [];
-        try { visible = allStations().filter(stationMatches); } catch {}
-        [...stationListEl.querySelectorAll(".station")].forEach((row, i) => {
-          row.dataset.djStationIndex = String(i);
-        });
-        stationListEl.__djVisibleStations = visible;
-        updateHint();
+        ensureUserFolderButtons();
+        syncFolderSelects();
+        updateManageButton();
       };
     } catch {}
-
-    const realGroups = ["Moje","HELEN","SK","OLDIES","JAZZ","ONLY","ETNO","WORLD","CZ","PL","Slovo","Hudba"];
-    const bestCurrentGroup = s => {
-      const u = stationUrl(s);
-      if (groupOverrides[u]?.[0]) return groupOverrides[u][0];
-      try {
-        if (typeof filter !== "undefined" && realGroups.includes(filter) && filter !== "NEW") return filter;
-      } catch {}
-      const gs = Array.isArray(s?.groups) ? s.groups : [];
-      return gs.find(g => realGroups.includes(g)) || "Moje";
-    };
 
     const openManager = s => {
       if (!s) return;
       pendingManage = s;
       try { pendingAssign = null; } catch {}
-      if (title) title.textContent = s.newDiscovery ? "Uložiť stanicu" : "Správa stanice";
+      syncFolderSelects();
+      const isNew = !!s.newDiscovery;
+      if (title) title.textContent = isNew ? "Uložiť stanicu" : "Presunúť stanicu";
+      if (note) note.textContent = isNew
+        ? "Vyber priečinok, kam chceš NEW stanicu uložiť."
+        : "Vyber nový priečinok. Stanica sa z pôvodného priečinka presunie.";
       if (assignName) assignName.textContent = s.name || "Stanica";
-      const g = bestCurrentGroup(s);
-      if ([...groupSelect.options].some(o => o.value === g || o.textContent === g)) groupSelect.value = g;
-      if (deleteBtn) deleteBtn.textContent = s.newDiscovery ? "VYMAZAŤ Z NEW" : "VYMAZAŤ";
+      const g = currentPrimaryGroup(s);
+      if ([...groupSelect.options].some(o => o.value === g)) groupSelect.value = g;
+      else groupSelect.value = "Moje";
+      if (saveBtn) saveBtn.textContent = isNew ? "ULOŽIŤ DO" : "PRESUNÚŤ DO";
+      if (deleteBtn) deleteBtn.textContent = isNew ? "VYMAZAŤ Z NEW" : "VYMAZAŤ";
       try { if (!dialog.open) dialog.showModal(); } catch {}
     };
 
-    stationListEl.addEventListener("dblclick", e => {
-      const row = e.target.closest(".station");
-      if (!row) return;
+    moveBtn.addEventListener("click", e => {
       e.preventDefault();
-      e.stopImmediatePropagation();
-      const arr = stationListEl.__djVisibleStations || [];
-      const s = arr[Number(row.dataset.djStationIndex || -1)];
+      let s = null;
+      try { s = typeof current !== "undefined" ? current : null; } catch {}
       if (s) openManager(s);
-    }, true);
+    });
 
     const closeManager = () => {
       pendingManage = null;
@@ -1146,7 +1228,7 @@
       if (!s) return;
       const g = groupSelect.value || "Moje";
       const u = stationUrl(s);
-      if (!u) return;
+      if (!u || !isTargetGroup(g)) return;
 
       deletedUrls.delete(u);
       persistDeleted();
@@ -1163,6 +1245,7 @@
           }
           if (typeof saveLocal === "function") saveLocal(ASSIGNED_KEY, assignedStations);
           if (Array.isArray(freshNew)) freshNew = freshNew.filter(x => stationUrl(x) !== u);
+          try { if (Array.isArray(window.__djchoiceSmartNew)) window.__djchoiceSmartNew = window.__djchoiceSmartNew.filter(x => stationUrl(x) !== u); } catch {}
         } else if (s.local) {
           const hit = Array.isArray(localStations) ? localStations.find(x => stationUrl(x) === u) : null;
           if (hit) hit.groups = [g];
@@ -1177,6 +1260,7 @@
         }
       } catch (err) {
         console.warn("DJ Choice station move failed", err);
+        return;
       }
 
       closeManager();
@@ -1208,6 +1292,7 @@
           if (typeof saveLocal === "function") saveLocal(ASSIGNED_KEY, assignedStations);
         }
         if (Array.isArray(freshNew)) freshNew = freshNew.filter(x => stationUrl(x) !== u);
+        try { if (Array.isArray(window.__djchoiceSmartNew)) window.__djchoiceSmartNew = window.__djchoiceSmartNew.filter(x => stationUrl(x) !== u); } catch {}
         if (typeof current !== "undefined" && current && stationUrl(current) === u) {
           try { if (typeof stopAudio === "function") stopAudio(); } catch {}
           current = null;
@@ -1222,11 +1307,12 @@
     };
     deleteBtn?.addEventListener("click", deleteManaged, true);
 
-    // Manuálny PRIDAJ: zvolí sa priečinok a stanica v ňom zostane po reštarte.
+    // Manuálny PRIDAJ zostáva: názov + HTTPS link + cieľový priečinok.
     addBtn?.addEventListener("click", () => {
+      syncFolderSelects();
       let g = "Moje";
-      try { if (realGroups.includes(filter) && filter !== "NEW") g = filter; } catch {}
-      if (customGroup && [...customGroup.options].some(o => o.value === g || o.textContent === g)) customGroup.value = g;
+      try { if (isTargetGroup(filter) && filter !== "NEW") g = filter; } catch {}
+      if (customGroup && [...customGroup.options].some(o => o.value === g)) customGroup.value = g;
     });
 
     saveCustomBtn?.addEventListener("click", e => {
@@ -1241,6 +1327,10 @@
       }
       if (!url.startsWith("https://")) {
         alert("Webová DJ Choice prijíma iba HTTPS streamy.");
+        return;
+      }
+      if (!isTargetGroup(g)) {
+        alert("Vyber platný priečinok.");
         return;
       }
 
@@ -1280,13 +1370,86 @@
       } catch {}
     }, true);
 
-    // Už pri štarte zobraz nápovedu, ďalšie rendery ju udržia aktuálnu.
-    try { if (typeof render === "function") render(); else updateHint(); } catch { updateHint(); }
+    // PRIEČINKY – zámerne len pridanie a premenovanie používateľských priečinkov.
+    const openFolders = () => {
+      syncFolderSelects();
+      if (newFolderName) newFolderName.value = "";
+      if (renameFolderSelect && userGroups.length) {
+        renameFolderSelect.value = userGroups[0];
+        if (renameFolderName) renameFolderName.value = userGroups[0];
+      }
+      try { if (!foldersDialog.open) foldersDialog.showModal(); } catch {}
+    };
+    foldersBtn?.addEventListener("click", openFolders);
+    foldersCloseBtn?.addEventListener("click", () => { try { foldersDialog.close(); } catch {} });
+    foldersDialog?.addEventListener("click", e => { if (e.target === foldersDialog) { try { foldersDialog.close(); } catch {} } });
+
+    renameFolderSelect?.addEventListener("change", () => {
+      if (renameFolderName) renameFolderName.value = renameFolderSelect.value || "";
+    });
+
+    addFolderBtn?.addEventListener("click", () => {
+      const g = normalizeFolder(newFolderName?.value);
+      if (!g) { alert("Napíš názov priečinka."); return; }
+      if (RESERVED_GROUPS.has(g.toLocaleLowerCase("sk")) || userGroups.some(x => sameName(x,g))) {
+        alert("Taký priečinok už existuje.");
+        return;
+      }
+      userGroups.push(g);
+      persistUserGroups();
+      syncFolderSelects();
+      try { filter = g; } catch {}
+      try { foldersDialog?.close(); } catch {}
+      try { if (typeof render === "function") render(); } catch {}
+    });
+
+    renameFolderBtn?.addEventListener("click", () => {
+      const oldName = renameFolderSelect?.value || "";
+      const newName = normalizeFolder(renameFolderName?.value);
+      if (!oldName || !userGroups.includes(oldName)) return;
+      if (!newName) { alert("Napíš nový názov priečinka."); return; }
+      if (!sameName(oldName,newName) && (RESERVED_GROUPS.has(newName.toLocaleLowerCase("sk")) || userGroups.some(x => sameName(x,newName)))) {
+        alert("Taký priečinok už existuje.");
+        return;
+      }
+      if (oldName === newName) { try { foldersDialog?.close(); } catch {} return; }
+
+      userGroups = userGroups.map(g => g === oldName ? newName : g);
+      try {
+        if (Array.isArray(localStations)) {
+          for (const s of localStations) if (Array.isArray(s.groups)) s.groups = s.groups.map(g => g === oldName ? newName : g);
+          if (typeof saveLocal === "function") saveLocal(LOCAL_KEY, localStations);
+        }
+        if (Array.isArray(assignedStations)) {
+          for (const s of assignedStations) if (Array.isArray(s.groups)) s.groups = s.groups.map(g => g === oldName ? newName : g);
+          if (typeof saveLocal === "function") saveLocal(ASSIGNED_KEY, assignedStations);
+        }
+        for (const u of Object.keys(groupOverrides)) {
+          if (Array.isArray(groupOverrides[u])) groupOverrides[u] = groupOverrides[u].map(g => g === oldName ? newName : g);
+        }
+        persistOverrides();
+      } catch (err) {
+        console.warn("DJ Choice folder rename failed", err);
+        alert("Premenovanie sa nepodarilo.");
+        return;
+      }
+      persistUserGroups();
+      try { if (typeof filter !== "undefined" && filter === oldName) filter = newName; } catch {}
+      syncFolderSelects();
+      try { foldersDialog?.close(); } catch {}
+      try { if (typeof render === "function") render(); } catch {}
+    });
+
+    // Staré tlačidlo ODSTRÁNIŤ Z MOJE už nepotrebujeme – mazanie je v centrálnej správe.
+    try { document.querySelector("#deleteLocalBtn")?.classList.add("hidden"); } catch {}
+
+    syncFolderSelects();
+    try { if (typeof render === "function") render(); else { ensureUserFolderButtons(); updateManageButton(); } } catch { updateManageButton(); }
   }
 
   installHelenFeature();
   installMojeAndAddFix();
-  installStationManagerV9();
+  installStationManagerV10();
   addOnlyStations();
   installTodayCard();
   installKineticEq();

@@ -13,7 +13,7 @@
   <title>DJ Choice</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css?v=4">
-  <link rel="stylesheet" href="extras.css?v=9">
+  <link rel="stylesheet" href="extras.css?v=10">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
 </head>
 <body>
@@ -33,6 +33,7 @@
       <div class="library-top">
         <input id="search" type="search" placeholder="Hľadaj stanicu…" autocomplete="off">
         <button id="addBtn" class="accent">＋ PRIDAJ</button>
+        <button id="foldersBtn" class="ghost">PRIEČINKY</button>
       </div>
 
       <div id="filters" class="filters"></div>
@@ -61,6 +62,7 @@
       <div class="controls">
         <button id="playBtn" class="play">▶ PREHRAŤ</button>
         <button id="stopBtn" class="stop">■ STOP</button>
+        <button id="moveStationBtn" class="ghost station-move-btn" disabled>ULOŽ / PRESUŇ…</button>
       </div>
 
       <label class="volume-row">
@@ -93,7 +95,7 @@
 
       <section class="new-help">
         <div class="side-title">NEW</div>
-        <p>Pri štarte sa načíta malý výber nových funkčných HTTPS staníc. Dvojklik na NEW → <b>Pridať do…</b>.</p>
+        <p>Pri štarte sa načíta malý výber nových funkčných HTTPS staníc. Vyber stanicu a v strede stlač <b>ULOŽ DO…</b>.</p>
       </section>
     </aside>
   </main>
@@ -153,7 +155,7 @@
           <option>Hudba</option>
         </select>
       </label>
-      <p class="dialog-note">Dvojklik na stanicu otvorí túto správu stanice.</p>
+      <p id="manageStationNote" class="dialog-note">Vyber cieľový priečinok. V NEW sa stanica uloží; inde sa presunie.</p>
       <div class="dialog-actions station-manage-actions">
         <button id="manageCancelBtn" type="button" class="ghost">ZRUŠIŤ</button>
         <button id="manageDeleteBtn" type="button" class="danger">VYMAZAŤ</button>
@@ -162,7 +164,32 @@
     </form>
   </dialog>
 
+  <dialog id="foldersDialog">
+    <form method="dialog" id="foldersForm">
+      <h2>Priečinky</h2>
+      <label>Nový priečinok
+        <input id="newFolderName" maxlength="24" placeholder="napr. RELAX">
+      </label>
+      <div class="dialog-actions folder-add-actions">
+        <button id="addFolderBtn" type="button" class="accent">＋ PRIDAŤ PRIEČINOK</button>
+      </div>
+      <div id="renameFolderBlock" class="folder-rename-block">
+        <label>Premenovať môj priečinok
+          <select id="renameFolderSelect"></select>
+        </label>
+        <label>Nový názov
+          <input id="renameFolderName" maxlength="24">
+        </label>
+        <button id="renameFolderBtn" type="button" class="ghost">PREMENOVAŤ</button>
+      </div>
+      <p class="dialog-note">Systémové priečinky nechávam chránené, aby sa nerozbila logika rádia. Priečinky, ktoré pridáš ty, môžeš ľubovoľne premenovať.</p>
+      <div class="dialog-actions">
+        <button id="foldersCloseBtn" type="button" class="ghost">HOTOVO</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="app.js?v=5" defer></script>
-  <script src="extras.js?v=9" defer></script>
+  <script src="extras.js?v=10" defer></script>
 </body>
 </html>

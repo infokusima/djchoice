@@ -420,3 +420,43 @@ body.dj-jukebox .helen-photo-card{
   .station-manage-actions button{flex:1 1 auto}
   .station-manage-actions .danger{margin-right:0}
 }
+
+
+/* V10 – tretie tlačidlo na správu stanice + používateľské priečinky */
+#deleteLocalBtn{display:none !important}
+.station-move-btn{
+  padding:13px 16px;
+  white-space:nowrap;
+  border:1px solid rgba(255,211,63,.22);
+}
+.station-move-btn:not(:disabled){
+  color:#FFE58A;
+  background:rgba(255,211,63,.08);
+}
+.station-move-btn:disabled{
+  opacity:.36;
+  cursor:default;
+}
+.station-manage-hint.hidden{display:none}
+.station-manage-hint.new-mode{
+  margin:0 14px 9px;
+}
+.user-folder-filter{
+  border:1px dashed rgba(127,231,240,.36);
+}
+#foldersBtn{white-space:nowrap}
+.folder-rename-block{
+  margin-top:20px;
+  padding-top:14px;
+  border-top:1px solid rgba(255,255,255,.09);
+}
+.folder-rename-block.hidden{display:none}
+.folder-add-actions{margin-top:10px}
+#foldersDialog .dialog-note{margin-top:18px}
+@media(max-width:620px){
+  .library-top{flex-wrap:wrap}
+  .library-top #search{flex:1 0 100%}
+  .library-top #addBtn,.library-top #foldersBtn{flex:1}
+  .controls{flex-wrap:wrap}
+  .station-move-btn{flex:1 1 100%}
+}
