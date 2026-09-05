@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<rect width="512" height="512" rx="112" fill="#24143D"/>
+<circle cx="92" cy="80" r="118" fill="#FF4B91" opacity=".95"/>
+<circle cx="455" cy="53" r="105" fill="#45D9E6" opacity=".9"/>
+<text x="62" y="300" fill="#FFF9FF" font-family="Segoe UI,Arial" font-size="154" font-weight="700">DJ</text>
+<text x="62" y="405" fill="#FFD33F" font-family="Segoe UI,Arial" font-size="92" font-weight="700">CHOICE</text>
+</svg>
