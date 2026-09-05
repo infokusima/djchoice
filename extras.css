@@ -460,3 +460,58 @@ body.dj-jukebox .helen-photo-card{
   .controls{flex-wrap:wrap}
   .station-move-btn{flex:1 1 100%}
 }
+
+
+/* V11 – samostatné rolovanie zoznamu staníc na desktope */
+@media (min-width:761px){
+  .library{
+    height:calc(100vh - 112px);
+    min-height:0;
+    max-height:780px;
+    position:sticky;
+    top:94px;
+    overflow:hidden;
+  }
+
+  .station-list{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    overflow-x:hidden;
+    overscroll-behavior:contain;
+    scrollbar-gutter:stable;
+  }
+
+  .station-list::-webkit-scrollbar{
+    width:10px;
+  }
+  .station-list::-webkit-scrollbar-track{
+    background:rgba(255,255,255,.025);
+    border-radius:10px;
+  }
+  .station-list::-webkit-scrollbar-thumb{
+    background:rgba(255,255,255,.16);
+    border:2px solid transparent;
+    background-clip:padding-box;
+    border-radius:10px;
+  }
+  .station-list::-webkit-scrollbar-thumb:hover{
+    background:rgba(255,255,255,.26);
+    border:2px solid transparent;
+    background-clip:padding-box;
+  }
+}
+
+/* Na mobile nech zostane prirodzené rolovanie celej stránky. */
+@media (max-width:760px){
+  .library{
+    height:auto;
+    max-height:none;
+    position:static;
+    overflow:visible;
+  }
+  .station-list{
+    overflow:visible;
+    max-height:none;
+  }
+}
